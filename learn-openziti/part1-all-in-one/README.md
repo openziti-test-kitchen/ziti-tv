@@ -49,7 +49,7 @@ docker run -it --rm \
     --preferred-challenges dns \
     --agree-tos \
     -d "*.zititv.demo.openziti.org" -d zititv.demo.openziti.org \
-    --email clint@openziti.org
+    --email clint@company.io
 ```
 
 You will see:
