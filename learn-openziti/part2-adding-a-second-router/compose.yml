@@ -5,6 +5,8 @@ volumes:
 networks:
   openziti:
     driver: bridge # generally the preferred driver type, keep your containers isolated
+  home:
+    driver: bridge
 
 services:
   controller:
@@ -30,5 +32,25 @@ services:
       # ensure this port matches the value of ZITI_CTRL_PORT in the container
       - ${ZITI_INTERFACE:-0.0.0.0}:${ZITI_CTRL_ADVERTISED_PORT:-1280}:${ZITI_CTRL_ADVERTISED_PORT:-1280}
       - ${ZITI_INTERFACE:-0.0.0.0}:${ZITI_ROUTER_PORT:-3022}:${ZITI_ROUTER_PORT:-3022}
+    restart: unless-stopped
+  
+  home-router:
+    image: zubuntu
+    user: ${ZIGGY_UID:-2171}
+    volumes:
+      - openziti:/openziti
+    command: sleep infinity # keeps the container running without doing anything
+    hostname: ${ZITI_HOME_ROUTER_ADVERTISED_ADDRESS:-ziti-router}
+    networks:
+      home:
+        aliases:
+          - ${ZITI_HOME_ROUTER_ADVERTISED_ADDRESS:-ziti-router}
+    environment:
+      ZITI_CTRL_ADVERTISED_ADDRESS: ${ZITI_CTRL_ADVERTISED_ADDRESS:-ziti-controller}      # FQDN of the controller
+      ZITI_CTRL_ADVERTISED_PORT: ${ZITI_CTRL_ADVERTISED_PORT:-1280}                       # TCP port of the controller
+      ZITI_HOME_ROUTER_ADVERTISED_ADDRESS: ${ZITI_HOME_ROUTER_ADVERTISED_ADDRESS:-ziti-router}  # FQDN of the controller
+      ZITI_ROUTER_PORT: ${ZITI_ROUTER_PORT:-3022}                                         # TCP port of the controller
+    ports:
+      - ${ZITI_INTERFACE:-0.0.0.0}:${ZITI_HOME_ROUTER_PORT:-3022}:${ZITI_HOME_ROUTER_PORT:-3022}
     restart: unless-stopped
   
