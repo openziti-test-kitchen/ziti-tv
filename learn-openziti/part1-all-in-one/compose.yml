@@ -1,8 +1,6 @@
 volumes:
   openziti:
     external: true
-  le-doc:
-    external: true
 
 networks:
   openziti:
@@ -14,7 +12,6 @@ services:
     user: ${ZIGGY_UID:-2171}
     volumes:
       - openziti:/openziti
-      - le-doc:/etc/letsencrypt
     #command: sleep infinity # keeps the container running without doing anything
     hostname: ${ZITI_CTRL_ADVERTISED_ADDRESS:-ziti-controller}
     networks:
