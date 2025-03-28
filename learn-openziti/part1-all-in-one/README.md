@@ -1,5 +1,8 @@
 # Part 1 - Mar 21 2005
 
+[* Follow along with first Ziti TV](https://www.youtube.com/live/93QZQWdblPU?si=MASCdTOauBIsRQAj)
+[Ziti TV Part2 - Separating From The Quickstart](https://www.youtube.com/live/AqLyqgNP3Qk?si=1t5nj64-Uvc6vaYq)
+
 In part one we'll be starting off making an OpenZiti overlay network in a single command.
 
 This example uses docker as a playground environment. If you have your own virtual machines, VPS or other, and you don't want to use docker you don't need to. The docker-related setup is just to get you a clean environment which you can start/stop/tear down entirely, quickly and easily.

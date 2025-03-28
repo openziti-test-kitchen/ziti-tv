@@ -56,7 +56,6 @@ services:
     user: ${ZIGGY_UID:-2171}
     volumes:
       - openziti:/openziti
-    command: sleep infinity # keeps the container running without doing anything
     hostname: ${ZITI_HOME_ROUTER_ADVERTISED_ADDRESS:-ziti-router}
     networks:
       home:
