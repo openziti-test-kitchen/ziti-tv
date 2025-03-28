@@ -3,7 +3,7 @@ FROM ubuntu:latest
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
-    sudo \
+    sudo bash-completion \
     python3 python3-pip \
     jq wget curl vim git \
     net-tools iputils-ping dnsutils \
