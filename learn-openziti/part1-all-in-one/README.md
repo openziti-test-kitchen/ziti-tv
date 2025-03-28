@@ -50,7 +50,7 @@ docker run -it --rm \
     --agree-tos \
     -d "*.zititv.demo.openziti.org" -d zititv.demo.openziti.org \
     --email clint@openziti.org
-  ```
+```
 
 You will see:
 ```
@@ -116,7 +116,7 @@ docker compose up #-d
 Here it is, time to start an entirely functional OpenZiti overlay network. Yes, it's one command but there are a few things that are important to note.
 
 First, I have __already__ registered a domain name with LetsEncrypt and I have __already__ obtained certificates for my domain.
-
+```
 ziti edge quickstart \
     --ctrl-address ${EXTERNAL_DNS} \
     --ctrl-port ${ZITI_CTRL_ADVERTISED_PORT} \
@@ -124,6 +124,7 @@ ziti edge quickstart \
     --router-port ${ZITI_ROUTER_PORT} \
     --password ${ZITI_PWD} \
     --home /openziti/zititv
+```
 
 ### Starting From the Beginning
 
