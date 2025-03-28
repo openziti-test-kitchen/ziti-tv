@@ -19,19 +19,36 @@ services:
       openziti:
         aliases:
           - ${ZITI_CTRL_ADVERTISED_ADDRESS:-ziti-controller}
-    environment:
-      EXTERNAL_DNS: ${EXTERNAL_DNS}
-      WILDCARD_DOMAIN: ${WILDCARD_DOMAIN}
-      ZITI_CTRL_ADVERTISED_ADDRESS: ${ZITI_CTRL_ADVERTISED_ADDRESS:-ziti-controller}
-      ZITI_CTRL_ADVERTISED_PORT: ${ZITI_CTRL_ADVERTISED_PORT:-1280}
-      ZITI_ROUTER_PORT: ${ZITI_ROUTER_PORT-:3022}
-      ZITI_PKI_ALT_SERVER_CERT: ${ZITI_PKI_ALT_SERVER_CERT-}
-      ZITI_PKI_ALT_SERVER_KEY: ${ZITI_PKI_ALT_SERVER_KEY-}
-      ZITI_PWD: ${ZITI_PWD:-}
+    command: ziti controller run /openziti/zititv/ctrl.yaml
     ports:
-      # ensure this port matches the value of ZITI_CTRL_PORT in the container
       - ${ZITI_INTERFACE:-0.0.0.0}:${ZITI_CTRL_ADVERTISED_PORT:-1280}:${ZITI_CTRL_ADVERTISED_PORT:-1280}
+    restart: unless-stopped
+
+  router:
+    image: zubuntu
+    user: ${ZIGGY_UID:-2171}
+    volumes:
+      - openziti:/openziti
+    hostname: ${ZITI_ROUTER_ADVERTISED_ADDRESS:-ziti-router}
+    networks:
+      openziti:
+        aliases:
+          - ${ZITI_ROUTER_ADVERTISED_ADDRESS:-ziti-router}
+    command: ziti router run /openziti/zititv/router-quickstart.yaml
+    ports:
       - ${ZITI_INTERFACE:-0.0.0.0}:${ZITI_ROUTER_PORT:-3022}:${ZITI_ROUTER_PORT:-3022}
+    restart: unless-stopped
+    
+  sshtarget:
+    image: zubuntu
+    user: ${ZIGGY_UID:-2171}
+    volumes:
+      - openziti:/openziti
+    hostname: sshtarget
+    networks:
+      openziti:
+        aliases:
+          - sshtarget
     restart: unless-stopped
   
   home-router:
