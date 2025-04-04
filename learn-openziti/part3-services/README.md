@@ -96,10 +96,51 @@ ssh to `sshtarget` from `home-router`
 ssh part2.ssh -i .ssh/id_ed25519
 ```
 
+## Rename Routers to `*.zititv`
+
+* `router-quickstart.zititv`
+* `home-router.zititv`
+
+## Make Addressable SSH Service
+
+ziti edge delete config "acme.wildcard.dial"
+ziti edge create config "acme.wildcard.dial" intercept.v1 '{
+    "addresses":["*.acme.challenge"],
+    "protocols":["tcp"],
+    "portRanges":[{"low":1, "high":32768}],
+    "dialOptions": {"identity": "$dst_hostname"}
+}'
+
+ziti edge delete config "acme.wildcard.bind"
+ziti edge create config "acme.wildcard.bind" host.v1      '{
+    "forwardProtocol":true,
+    "allowedProtocols":["tcp","udp"],
+    "forwardAddress":true,
+    "allowedAddresses":["*.acme.challenge"],
+    "forwardPort":true,
+    "allowedPortRanges":[ {"low":1,"high":32768}],
+    "listenOptions": {"bindUsingEdgeIdentity":true}
+}'
+
+ziti edge delete service "acme.challenge.service"
+ziti edge create service "acme.challenge.service" --configs "acme.wildcard.bind,acme.wildcard.dial"
+
+ziti edge delete service-policy acme.challenge.service.bind
+ziti edge create service-policy acme.challenge.service.bind Bind --service-roles "@acme.challenge.service" --identity-roles "#acme.challenge.service.binders"
+
+ziti edge delete service-policy acme.challenge.service.dial
+ziti edge create service-policy acme.challenge.service.dial Dial --service-roles "@acme.challenge.service" --identity-roles "#acme.challenge.service.dialers"
 
 
 
+# make sshtarget idnetity
 
+install ziti-edge-tunnel
+curl -sSLf https://get.openziti.io/tun/scripts/install-ubuntu.bash | bash
+
+ziti-edge-tunnel enroll -i sshtarget.id.json -j sshtarget.id.jwt
+
+ziti-edge-tunnel run-host -i ./sshtarget.id.json
 
 
 
