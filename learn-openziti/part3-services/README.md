@@ -103,11 +103,15 @@ ssh part2.ssh -i .ssh/id_ed25519
 
 ## Make Addressable SSH Service
 
+
+
+ziti edge login localhost:6700 -u admin -p $ZITI_PWD -y
+
 ziti edge delete config "acme.wildcard.dial"
 ziti edge create config "acme.wildcard.dial" intercept.v1 '{
-    "addresses":["*.acme.challenge"],
+    "addresses":["*.zititv"],
     "protocols":["tcp"],
-    "portRanges":[{"low":1, "high":32768}],
+    "portRanges":[{"low":80, "high":80},{"low":443, "high":443}],
     "dialOptions": {"identity": "$dst_hostname"}
 }'
 
@@ -116,9 +120,9 @@ ziti edge create config "acme.wildcard.bind" host.v1      '{
     "forwardProtocol":true,
     "allowedProtocols":["tcp","udp"],
     "forwardAddress":true,
-    "allowedAddresses":["*.acme.challenge"],
+    "allowedAddresses":["*.zititv"],
     "forwardPort":true,
-    "allowedPortRanges":[ {"low":1,"high":32768}],
+    "allowedPortRanges":[ {"low":80, "high":80},{"low":443, "high":443}],
     "listenOptions": {"bindUsingEdgeIdentity":true}
 }'
 
