@@ -53,7 +53,12 @@ services:
   
   home-router:
     image: zubuntu
-    user: ${ZIGGY_UID:-2171}
+    user: root #${ZIGGY_UID:-2171}
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1
+    cap_add:
+      - NET_ADMIN
     volumes:
       - openziti:/openziti
     hostname: ${ZITI_HOME_ROUTER_ADVERTISED_ADDRESS:-ziti-router}

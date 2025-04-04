@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     net-tools iputils-ping dnsutils \
     iproute2 gpg \
     unzip \
-    openssh-server && \
+    openssh-server iptables && \
     mkdir -p /var/run/sshd && \
     mkdir -p /etc/ssh && \
     ssh-keygen -A

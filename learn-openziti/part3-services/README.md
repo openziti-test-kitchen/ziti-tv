@@ -44,20 +44,19 @@ source <(ziti completion bash)
 Each time we make a new part, we are making new containers and we need to add the pubkey back to the sshtarget 
 as well as home-router to allow ssh'ing.
 
-**sshtarget**
 ```
+# **sshtarget**
 docker compose --project-name part3 exec sshtarget mkdir .ssh
 docker compose --project-name part3 exec sshtarget cp /openziti/my.pub.key .ssh/authorized_keys
 docker compose --project-name part3 exec sshtarget chmod -R 500 .ssh/
-```
-**home-router**
-```
+
+# **home-router**
 docker compose --project-name part3 exec home-router mkdir .ssh
 docker compose --project-name part3 exec home-router cp /openziti/my.pub.key .ssh/authorized_keys
 docker compose --project-name part3 exec home-router chmod -R 500 .ssh/
 ```
 
-## Start the Home-Routr
+## Start the Home-Router
 ```
 ./connect-to-home-router.sh
 ziti router run /openziti/home-router/home-router.yaml
@@ -65,6 +64,36 @@ ziti router run /openziti/home-router/home-router.yaml
 ## -- or without exec'ing into docker -- ##
 
 docker compose --project-name part3 exec home-router ziti router run /openziti/home-router/home-router.yaml
+```
+
+## Modify Home-Router for Intercept
+
+connect to the home-router using `./connect-to-home-router.sh` then issue:
+```
+chmod 700 /home/ziti/.ssh
+chmod 600 /home/ziti/.ssh/authorized_keys
+chown -R ziti:ziti /home/ziti/.ssh
+```
+
+Create a key to ssh with:
+```
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -C "your_email@example.com"
+
+# add the pubkey to authorized keys
+cat .ssh/id_ed25519.pub >> .ssh/authorized_keys
+```
+
+## SSH to `sshtarget` from `home-router`
+
+```
+cat .ssh/id_ed25519.pub
+```
+
+add this to the `sshtarget` `$HOME/.ssh/authorized_keys` file
+
+ssh to `sshtarget` from `home-router`
+```
+ssh part2.ssh -i .ssh/id_ed25519
 ```
 
 
