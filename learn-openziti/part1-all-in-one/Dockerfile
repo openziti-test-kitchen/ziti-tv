@@ -39,4 +39,7 @@ USER ziti
 
 WORKDIR /home/ziti
 
+# Add ziti bash completion to .bashrc for the ziti user
+RUN echo 'source <(ziti completion bash)' >> /home/ziti/.bashrc
+
 CMD ["sudo", "/usr/sbin/sshd", "-D"]
