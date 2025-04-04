@@ -1,4 +1,4 @@
-# Part 2 - Separating From The Quickstart
+# Part 3 - Advanced Services
 
 [Ziti TV Part1 - The Beginning](https://www.youtube.com/live/93QZQWdblPU?si=MASCdTOauBIsRQAj)
 [* This Ziti TV Part2 - Separating From The Quickstart](https://www.youtube.com/live/AqLyqgNP3Qk?si=1t5nj64-Uvc6vaYq)
@@ -140,11 +140,13 @@ ziti edge create service-policy acme.challenge.service.dial Dial --service-roles
 # make sshtarget idnetity
 
 install ziti-edge-tunnel
+```
 curl -sSLf https://get.openziti.io/tun/scripts/install-ubuntu.bash | bash
 
 ziti-edge-tunnel enroll -i sshtarget.id.json -j sshtarget.id.jwt
 
 ziti-edge-tunnel run-host -i ./sshtarget.id.json
+```
 
 
 
