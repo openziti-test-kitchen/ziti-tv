@@ -1,0 +1,40 @@
+# Helm values for the openziti/ziti-host chart.
+#   helm install ziti-host openziti/ziti-host -n ziti --create-namespace -f ziti-host-values.yaml
+#
+# ziti-host is a tunneler running in "host" mode as a pod. It enrolls as a Ziti IDENTITY (not a
+# router) and BINDS services, forwarding overlay traffic to an in-cluster target. Here it fronts
+# the dark whoami ClusterIP, so whoami is dialable from the rest of the lab with no ingress.
+#
+# Provision the identity + service on the controller BEFORE installing this chart. Mirror the
+# pattern in scripts/provision-echo.sh, but point the host.v1 config at the k8s ClusterIP DNS:
+#
+#   ziti edge create config k8s-whoami.host.v1 host.v1 \
+#     '{"protocol":"tcp","address":"whoami.default.svc.cluster.local","port":80}'
+#   ziti edge create config k8s-whoami.intercept.v1 intercept.v1 \
+#     '{"protocols":["tcp"],"addresses":["whoami.ziti"],"portRanges":[{"low":80,"high":80}]}'
+#   ziti edge create service k8s-whoami --configs k8s-whoami.intercept.v1,k8s-whoami.host.v1
+#   ziti edge create identity k8s-host -a k8s.servers -o tokens/k8s-host.jwt
+#   ziti edge create service-policy k8s-whoami-bind Bind \
+#     --identity-roles '#k8s.servers' --service-roles '@k8s-whoami'
+#   # (a Dial policy for whatever client identity will dial whoami.ziti)
+#
+# --- the keys that actually matter -------------------------------------------------------------
+
+# The enrollment token (OTT JWT) for the k8s-host identity created above. Prefer injecting via a
+# secret / --set-file rather than committing the raw JWT:
+#   helm install ... --set-file zitiEnrollment=tokens/k8s-host.jwt
+zitiEnrollment: "PASTE_K8S_HOST_IDENTITY_ENROLLMENT_JWT_HERE"
+
+# Some chart versions key this differently. If your chart expects an existing secret holding the
+# enrolled identity JSON instead of a raw JWT, set it here and create the secret first:
+# secret:
+#   name: k8s-host-identity      # kubectl create secret generic k8s-host-identity ...
+
+# Pin to the lab's OpenZiti version.
+image:
+  repository: openziti/ziti-host
+  tag: "2.0.0"
+
+# No ports/Service are exposed by ziti-host: it dials OUT to the controller and edge routers and
+# forwards to whoami.default.svc.cluster.local:80 internally. That is the whole point: the only
+# inbound path to whoami is the overlay.

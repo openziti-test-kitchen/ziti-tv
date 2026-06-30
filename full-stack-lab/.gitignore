@@ -1,0 +1,20 @@
+# Local env (keep .env.example tracked)
+.env
+
+# Generated enrollment tokens, JWTs, enrolled identities (secrets)
+tokens/
+*.jwt
+
+# Controller DB snapshots
+backups/
+
+# Throwaway working files
+scratch/
+
+# Local Claude Code settings
+.claude/
+
+# Generated matrix output (keep results/SMOKE.md, ignore the rendered grids)
+results/interop-echo.md
+results/interop-http.md
+results/interop.html

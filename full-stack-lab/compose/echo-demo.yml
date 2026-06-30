@@ -1,0 +1,66 @@
+# First hosted service + dial.
+#
+#   echo-backend  : traefik/whoami HTTP server, lives in vpc2 (dark, no published port)
+#   echo-host     : ziti-tunnel in `host` mode, identity echo-host (#echo.servers),
+#                   binds service `echo` and forwards to echo-backend:80
+#   echo-client   : ziti-tunnel in `proxy` mode, identity echo-client (#echo.clients),
+#                   exposes the service locally on :8080 so you can curl it
+#
+# Dial test:  docker exec zo-echo-client-1 curl -s http://localhost:8080
+# The request rides the overlay: echo-client -> edge router(s) -> echo-host -> echo-backend.
+
+volumes:
+  echo-host-id:
+  echo-client-id:
+
+networks:
+  ziti:
+    name: ${ZITI_NETWORK:-zo-ctrl}
+    external: true
+  vpc2:
+    name: zo-vpc2
+    external: true
+  home:
+    name: zo-home
+    external: true
+
+services:
+  # Dark backend: only reachable through the overlay, no host port.
+  echo-backend:
+    image: traefik/whoami
+    networks:
+      vpc2:
+        aliases: [echo-backend]
+    restart: unless-stopped
+
+  # Host-side tunneler: binds `echo` and forwards to echo-backend. On ziti (control + fabric)
+  # and vpc2 (to reach the backend).
+  echo-host:
+    image: ${ZITI_TUNNEL_IMAGE:-openziti/ziti-tunnel:2.0.0}
+    depends_on: [echo-backend]
+    environment:
+      ZITI_IDENTITY_BASENAME: echo-host
+    env_file: [../tokens/echo-host.env]
+    command: host
+    volumes:
+      - echo-host-id:/netfoundry
+    networks:
+      ziti: {}
+      vpc2: {}
+    restart: unless-stopped
+
+  # Client-side tunneler: proxy mode exposes service `echo` on local :8080. On ziti and home.
+  echo-client:
+    image: ${ZITI_TUNNEL_IMAGE:-openziti/ziti-tunnel:2.0.0}
+    environment:
+      ZITI_IDENTITY_BASENAME: echo-client
+    env_file: [../tokens/echo-client.env]
+    # Proxy multiple services from one identity: echo on :8080, ssh on :2222,
+    # winonly on :8081 (posture-gated to Windows, so this Linux client is denied).
+    command: proxy echo:8080 ssh:2222 winonly:8081
+    volumes:
+      - echo-client-id:/netfoundry
+    networks:
+      ziti: {}
+      home: {}
+    restart: unless-stopped

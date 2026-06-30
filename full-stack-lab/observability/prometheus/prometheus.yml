@@ -1,0 +1,22 @@
+# Prometheus scrape config for the Ziti controllers.
+# Ziti emits Prometheus metrics when the controller config has a metrics handler of type
+# `prometheus` bound to a web listener API binding `metrics`. See observability/README.md for
+# the controller-config snippet to enable it. Until enabled these targets will show as DOWN.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: ziti-controllers
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets:
+          - ziti-controller1:1280
+          - ziti-controller2:1282
+          - ziti-controller3:1283
+    metrics_path: /metrics
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

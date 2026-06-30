@@ -1,0 +1,48 @@
+# Helm values for the openziti/ziti-router chart.
+#   helm repo add openziti https://openziti.github.io/helm-charts/
+#   helm install ziti-router openziti/ziti-router -n ziti --create-namespace -f ziti-router-values.yaml
+#
+# This router enrolls into the EXISTING controller cluster (the `zo` docker lab), so the chart
+# only needs the controller's advertised address/port and a fresh edge-router enrollment JWT.
+#
+# Mint the JWT first (run from the repo root, against the running lab):
+#   ziti edge create edge-router k8s-er --tunneler-enabled -o tokens/k8s-er.jwt
+# The repo helper does the same thing and stages tokens/k8s-er.env:
+#   scripts/mint-router-token.sh k8s-er --tunneler-enabled
+#
+# IMPORTANT: the k3d cluster must be on the controller's docker network so pods can resolve and
+# reach ziti-controller1/2/3 (see README: k3d cluster create ziti --network zo-ctrl).
+
+# --- the keys that actually matter -------------------------------------------------------------
+
+# Controller advertised address + control-plane port. Matches ZITI_CTRL_ADVERTISED_ADDRESS /
+# ZITI_CTRL_ADVERTISED_PORT in compose/routers.yml. The client API port in this lab is 1280.
+ctrl:
+  endpoint: "ziti-controller1:1280"
+
+# The router's own enrollment token (the JWT minted above). Paste the raw JWT here, OR prefer
+# wiring it from a secret / --set-file so the token never lands in version control:
+#   helm install ... --set-file enrollmentJwt=tokens/k8s-er.jwt
+enrollmentJwt: "PASTE_K8S_ER_ENROLLMENT_JWT_HERE"
+
+# Router name as it appears in `ziti edge list edge-routers`. Keep it equal to the name you
+# minted the JWT for (k8s-er) so the lab story stays consistent.
+# (The chart derives the router identity name from the release/values; the enrollment JWT is the
+#  authoritative binding to the controller-side edge-router object named k8s-er.)
+
+# This router is a tunneler-enabled edge router. We do NOT need to expose its edge listener to
+# the outside world for the dark-service demo, because ziti-host (a separate release) hosts the
+# whoami service. If you instead want this router to host services itself, enable tunnel mode:
+# tunnel:
+#   mode: host            # host | tproxy | proxy | none
+
+# Do NOT request a public LoadBalancer/edge listener unless another site needs to dial THIS
+# router directly. For the lab the router reaches the controllers over the shared docker network.
+edge:
+  advertisedPort: 3022
+  # advertisedHost: k8s-er   # only needed if other routers/clients link directly to this one
+
+# Pin the image to the lab's OpenZiti version (2.0.0) to match compose/routers.yml.
+image:
+  repository: openziti/ziti-router
+  tag: "2.0.0"

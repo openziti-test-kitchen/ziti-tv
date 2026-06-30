@@ -1,0 +1,52 @@
+# Minimal echo demo for the teaching stack (runs on lesson-min / project zomin).
+# Same idea as compose/echo-demo.yml but on the single-router zomin-net, echo only, so
+# Module 1 never needs the big lab.
+#
+#   echo-backend : whoami HTTP server, dark (no published port)
+#   echo-host    : ziti-tunnel host mode, binds service `echo` -> echo-backend:80
+#   echo-client  : ziti-tunnel proxy mode, exposes echo on local :8080
+#
+# Provision + bring up with: bash scripts/lesson-echo.sh
+# Dial test:  docker exec zomin-echo-client-1 curl -s http://localhost:8080
+
+networks:
+  zomin-net:
+    name: zomin-net
+    external: true
+
+services:
+  echo-backend:
+    image: traefik/whoami
+    networks:
+      zomin-net:
+        aliases: [echo-backend]
+    restart: unless-stopped
+
+  echo-host:
+    image: ${ZITI_TUNNEL_IMAGE:-openziti/ziti-tunnel:2.0.0}
+    depends_on: [echo-backend]
+    environment:
+      ZITI_IDENTITY_BASENAME: echo-host
+    env_file:
+      - path: ../tokens/echo-host.env
+        required: false
+    command: host
+    volumes: [echo-host-id:/netfoundry]
+    networks: [zomin-net]
+    restart: unless-stopped
+
+  echo-client:
+    image: ${ZITI_TUNNEL_IMAGE:-openziti/ziti-tunnel:2.0.0}
+    environment:
+      ZITI_IDENTITY_BASENAME: echo-client
+    env_file:
+      - path: ../tokens/echo-client.env
+        required: false
+    command: proxy echo:8080
+    volumes: [echo-client-id:/netfoundry]
+    networks: [zomin-net]
+    restart: unless-stopped
+
+volumes:
+  echo-host-id:
+  echo-client-id:

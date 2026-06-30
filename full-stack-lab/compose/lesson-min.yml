@@ -1,0 +1,100 @@
+# Minimal teaching stack: ONE controller + ONE edge router. Nothing else.
+# This is the starting point for the early video lessons (Modules 1-2). It is intentionally
+# tiny so a beginner sees only: a brain (controller) and a thing that carries traffic (router).
+#
+# Runs under its own project `zomin` and network `zomin-net`, so it never collides with the
+# full "overkill" `zo` stack. Run only one of the two at a time (both use host ports 1280/3022).
+#
+# Bring up:  bash scripts/lesson-up.sh
+# Tear down: docker compose -p zomin -f compose/lesson-min.yml down -v
+
+volumes:
+  ziti-controller:
+  lesson-router:
+
+networks:
+  zomin-net:
+    name: zomin-net
+    driver: bridge
+
+services:
+  # ---- the brain ----
+  chown-controller:
+    image: busybox
+    command: chown -R ${ZIGGY_UID:-2171} /ziti-controller
+    volumes: [ziti-controller:/ziti-controller]
+
+  ziti-controller:
+    image: ${ZITI_CONTROLLER_IMAGE:-openziti/ziti-controller:2.0.0}
+    depends_on:
+      chown-controller:
+        condition: service_completed_successfully
+    user: ${ZIGGY_UID:-2171}
+    volumes: [ziti-controller:/ziti-controller]
+    networks:
+      zomin-net:
+        aliases: [ziti-controller]
+    environment:
+      ZITI_CTRL_ADVERTISED_ADDRESS: ziti-controller
+      ZITI_CTRL_ADVERTISED_PORT: "1280"
+      ZITI_PWD: ${ZITI_PWD:-admin}
+      # A single-node "cluster" - same machinery as HA, just one member. Keeps the upgrade
+      # path to the HA lesson trivial.
+      ZITI_BOOTSTRAP_CLUSTER: "true"
+      ZITI_CLUSTER_NODE_NAME: ziti-controller
+      ZITI_CLUSTER_TRUST_DOMAIN: ${ZITI_CLUSTER_TRUST_DOMAIN:-learning.openziti.local}
+      ZITI_BOOTSTRAP: "true"
+      ZITI_BOOTSTRAP_PKI: "true"
+      ZITI_BOOTSTRAP_CONFIG: "true"
+      ZITI_BOOTSTRAP_DATABASE: "true"
+      ZITI_AUTO_RENEW_CERTS: "true"
+    command: run config.yml
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:1280:1280"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ziti", "agent", "stats"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  # ---- the thing that carries traffic ----
+  chown-lesson-router:
+    image: busybox
+    command: chown -R ${ZIGGY_UID:-2171} /ziti-router
+    volumes: [lesson-router:/ziti-router]
+
+  lesson-router:
+    image: ${ZITI_ROUTER_IMAGE:-openziti/ziti-router:2.0.0}
+    depends_on:
+      chown-lesson-router:
+        condition: service_completed_successfully
+    user: ${ZIGGY_UID:-2171}
+    volumes: [lesson-router:/ziti-router]
+    # token minted by scripts/lesson-up.sh (optional so the controller can start before it exists)
+    env_file:
+      - path: ../tokens/lesson-router.env
+        required: false
+    environment:
+      ZITI_CTRL_ADVERTISED_ADDRESS: ziti-controller
+      ZITI_CTRL_ADVERTISED_PORT: "1280"
+      ZITI_ROUTER_ADVERTISED_ADDRESS: lesson-router
+      ZITI_ROUTER_PORT: "3022"
+      ZITI_ROUTER_MODE: host
+      ZITI_BOOTSTRAP: "true"
+      ZITI_BOOTSTRAP_CONFIG: "true"
+      ZITI_BOOTSTRAP_ENROLLMENT: "true"
+      ZITI_AUTO_RENEW_CERTS: "true"
+      ZITI_ROUTER_TYPE: edge
+    command: run config.yml
+    networks:
+      zomin-net:
+        aliases: [lesson-router]
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:3022:3022"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ziti", "agent", "stats"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+      start_period: 15s

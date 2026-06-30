@@ -1,0 +1,29 @@
+# SSH over Ziti, hosted by the corp-er ROUTER (router-hosted service pattern).
+#
+#   ssh-backend : an sshd in corp (dark, no published port)
+#   corp-er     : already running (compose/routers.yml), tunneler host mode; its router
+#                 identity binds the `ssh` service and forwards to ssh-backend:2222
+#   echo-client : already running; reconfigured to also proxy ssh on local :2222
+#
+# Dial test:  docker exec zo-echo-client-1 bash -c 'exec 3<>/dev/tcp/127.0.0.1/2222; head -1 <&3'
+#             (returns the SSH-2.0 banner, proving the tunnel reaches sshd)
+
+networks:
+  corp:
+    name: zo-corp
+    external: true
+
+services:
+  ssh-backend:
+    image: lscr.io/linuxserver/openssh-server:latest
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+      PASSWORD_ACCESS: "true"
+      USER_NAME: demo
+      USER_PASSWORD: demo
+    networks:
+      corp:
+        aliases: [ssh-backend]
+    restart: unless-stopped

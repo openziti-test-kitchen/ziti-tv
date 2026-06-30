@@ -1,0 +1,27 @@
+# HAProxy front door (project zo). One memorable name in front of the controller cluster.
+# NOTE: requires the controllers to advertise learning.openziti.local as a cert SAN, run
+# scripts/front-door-certs.sh first (issues an alt_server_cert from the shared CA). Until then
+# clients hitting learning.openziti.local will get a TLS name mismatch. HAProxy itself works
+# regardless (it is pure TCP passthrough).
+#
+# Bring up:  docker compose -p zo -f compose/controllers.yml -f compose/haproxy.yml up -d haproxy
+# Then on the host add to your hosts file:  127.0.0.1  learning.openziti.local
+
+networks:
+  ziti:
+    name: ${ZITI_NETWORK:-zo-ctrl}
+    external: true
+
+services:
+  haproxy:
+    image: haproxy:2.9-alpine
+    volumes:
+      - ../haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      ziti:
+        aliases: [learning.openziti.local]
+    # 1281 on the host so it does not clash with controller1's own 1280 publish.
+    ports:
+      - "${ZITI_INTERFACE:-0.0.0.0}:1281:1280"
+      - "${ZITI_INTERFACE:-0.0.0.0}:8404:8404"
+    restart: unless-stopped

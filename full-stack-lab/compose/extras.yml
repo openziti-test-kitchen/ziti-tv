@@ -1,0 +1,56 @@
+# Advanced demos layered on the running `zo` lab.
+#
+#   roamer       : a tproxy tunneler that intercepts service DNS names, so you dial
+#                  `http://echo.ziti` BY NAME (how a real desktop/linux edge behaves)
+#   echo-host-2  : a second host for the `echo` service, to demo terminator failover (HA hosting)
+#
+# Both attach to zo-ctrl (control) plus a site network. Tokens are minted by the scripts.
+
+networks:
+  ziti:
+    name: ${ZITI_NETWORK:-zo-ctrl}
+    external: true
+  home:
+    name: zo-home
+    external: true
+  vpc2:
+    name: zo-vpc2
+    external: true
+
+volumes:
+  roamer-id:
+  echo-host-2-id:
+
+services:
+  # Dial-by-name client. tproxy needs NET_ADMIN + a tun device; the tunneler runs its own
+  # nameserver so `echo.ziti` resolves to an intercept IP and is routed onto the overlay.
+  roamer:
+    image: ${ZITI_TUNNEL_IMAGE:-openziti/ziti-tunnel:2.0.0}
+    environment:
+      ZITI_IDENTITY_BASENAME: roamer
+    env_file:
+      - path: ../tokens/roamer.env
+        required: false
+    command: tproxy
+    cap_add: [NET_ADMIN]
+    devices: ["/dev/net/tun"]
+    # Resolve overlay names via the tunneler's own nameserver (127.0.0.1) first, then fall
+    # back to docker DNS (127.0.0.11) for everything else. This is what makes `curl echo.ziti`
+    # work, the intercept.v1 addresses become resolvable.
+    dns: ["127.0.0.1", "127.0.0.11"]
+    volumes: [roamer-id:/netfoundry]
+    networks: [ziti, home]
+    restart: unless-stopped
+
+  # Second binder for `echo` -> demonstrates multiple terminators + failover.
+  echo-host-2:
+    image: ${ZITI_TUNNEL_IMAGE:-openziti/ziti-tunnel:2.0.0}
+    environment:
+      ZITI_IDENTITY_BASENAME: echo-host-2
+    env_file:
+      - path: ../tokens/echo-host-2.env
+        required: false
+    command: host
+    volumes: [echo-host-2-id:/netfoundry]
+    networks: [ziti, vpc2]
+    restart: unless-stopped

@@ -1,0 +1,20 @@
+{
+  "name": "zo-sdk-js",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenZiti interop-matrix programs (echo + http, server + client) for JS/Node",
+  "main": "entrypoint.js",
+  "scripts": {
+    "echo-server": "node entrypoint.js echo server",
+    "echo-client": "node entrypoint.js echo client",
+    "http-server": "node entrypoint.js http server",
+    "http-client": "node entrypoint.js http client"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@openziti/ziti-sdk-nodejs": "^0.29.1",
+    "express": "^4.21.2"
+  }
+}

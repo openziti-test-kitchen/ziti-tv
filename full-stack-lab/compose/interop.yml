@@ -1,0 +1,39 @@
+# The interop matrix lab: every SDK as an echo server AND an http server. See
+# docs/interop-matrix.md sections 3-4. Runs under project zo on the external control network
+# zo-ctrl. Each language code <c> uses image zo-sdk-<c> (built from sdk/<c>/Dockerfile); the
+# image entrypoint selects a program by args, e.g. `echo server` / `http server`.
+#
+# CLIENTS are NOT compose services: scripts/interop-matrix.sh runs each client as a one-shot
+# `docker run` so it uses the image's own entrypoint and exits with a RESULT line. Only the
+# long-running SERVERS live here.
+#
+# Identities come from scripts/provision-interop.sh, staged at tokens/interop/<id>.json and
+# mounted read-only at /ziti/id.json. Resilient: a missing image only stops that language.
+#
+#   docker compose -p zo -f compose/interop.yml up -d            # all servers (missing imgs skip)
+#   docker compose -p zo -f compose/interop.yml up -d i-echo-go i-http-go   # just one language
+
+networks:
+  ziti:
+    name: ${ZITI_NETWORK:-zo-ctrl}
+    external: true
+
+x-interop-base: &interop-base
+  networks: [ziti]
+  restart: unless-stopped
+
+services:
+  i-echo-go:    { <<: *interop-base, image: zo-sdk-go,    command: [echo, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: echo.go,    SELF_LANG: go },    volumes: ["../tokens/interop/isrv-go.json:/ziti/id.json:ro"] }
+  i-http-go:    { <<: *interop-base, image: zo-sdk-go,    command: [http, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: http.go,    SELF_LANG: go },    volumes: ["../tokens/interop/isrv-go.json:/ziti/id.json:ro"] }
+  i-echo-py:    { <<: *interop-base, image: zo-sdk-py,    command: [echo, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: echo.py,    SELF_LANG: py },    volumes: ["../tokens/interop/isrv-py.json:/ziti/id.json:ro"] }
+  i-http-py:    { <<: *interop-base, image: zo-sdk-py,    command: [http, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: http.py,    SELF_LANG: py },    volumes: ["../tokens/interop/isrv-py.json:/ziti/id.json:ro"] }
+  i-echo-js:    { <<: *interop-base, image: zo-sdk-js,    command: [echo, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: echo.js,    SELF_LANG: js },    volumes: ["../tokens/interop/isrv-js.json:/ziti/id.json:ro"] }
+  i-http-js:    { <<: *interop-base, image: zo-sdk-js,    command: [http, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: http.js,    SELF_LANG: js },    volumes: ["../tokens/interop/isrv-js.json:/ziti/id.json:ro"] }
+  i-echo-cs:    { <<: *interop-base, image: zo-sdk-cs,    command: [echo, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: echo.cs,    SELF_LANG: cs },    volumes: ["../tokens/interop/isrv-cs.json:/ziti/id.json:ro"] }
+  i-http-cs:    { <<: *interop-base, image: zo-sdk-cs,    command: [http, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: http.cs,    SELF_LANG: cs },    volumes: ["../tokens/interop/isrv-cs.json:/ziti/id.json:ro"] }
+  i-echo-java:  { <<: *interop-base, image: zo-sdk-java,  command: [echo, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: echo.java,  SELF_LANG: java },  volumes: ["../tokens/interop/isrv-java.json:/ziti/id.json:ro"] }
+  i-http-java:  { <<: *interop-base, image: zo-sdk-java,  command: [http, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: http.java,  SELF_LANG: java },  volumes: ["../tokens/interop/isrv-java.json:/ziti/id.json:ro"] }
+  i-echo-c:     { <<: *interop-base, image: zo-sdk-c,     command: [echo, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: echo.c,     SELF_LANG: c },     volumes: ["../tokens/interop/isrv-c.json:/ziti/id.json:ro"] }
+  i-http-c:     { <<: *interop-base, image: zo-sdk-c,     command: [http, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: http.c,     SELF_LANG: c },     volumes: ["../tokens/interop/isrv-c.json:/ziti/id.json:ro"] }
+  i-echo-swift: { <<: *interop-base, image: zo-sdk-swift, command: [echo, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: echo.swift, SELF_LANG: swift }, volumes: ["../tokens/interop/isrv-swift.json:/ziti/id.json:ro"] }
+  i-http-swift: { <<: *interop-base, image: zo-sdk-swift, command: [http, server], environment: { ZITI_IDENTITY: /ziti/id.json, ZITI_SERVICE: http.swift, SELF_LANG: swift }, volumes: ["../tokens/interop/isrv-swift.json:/ziti/id.json:ro"] }

@@ -1,0 +1,191 @@
+# Router roster across emulated sites.
+#
+# Control plane: every router attaches to the `ziti` network to reach the controllers'
+# control channel. Data/topology: each router also attaches to the site network(s) it
+# belongs to, so the layout mirrors the intended path home -> internet -> vpc1 -> vpc2
+# (plus a corp site). Link-path shaping (cost/policies) is layered on later.
+#
+# Roster (D4 variety: tunneler on/off, different tunnel modes):
+#   public-er-1   internet edge, tunneler host      (public entry)
+#   transit-router internet transit-only, no tunnel (pure fabric transit)
+#   vpc1-er       vpc1 edge, tunneler host          (mid hop, can host)
+#   vpc2-er       vpc2 edge, tunneler host          (hosts services, deep hop)
+#   corp-er       corp edge, tunneler host          (on-prem private)
+#   home-er       home edge, tunneler tproxy        (home user entry)
+
+x-router-env: &router-env
+  ZITI_CTRL_ADVERTISED_ADDRESS: ${ZITI_CTRL1_ADVERTISED_ADDRESS:-ziti-controller1}
+  ZITI_CTRL_ADVERTISED_PORT: ${ZITI_CTRL1_ADVERTISED_PORT:-1280}
+  ZITI_BOOTSTRAP: "true"
+  ZITI_BOOTSTRAP_CONFIG: "true"
+  ZITI_BOOTSTRAP_ENROLLMENT: "true"
+  ZITI_AUTO_RENEW_CERTS: "true"
+  ZITI_ROUTER_TYPE: edge
+
+x-router-healthcheck: &router-healthcheck
+  test: ["CMD", "ziti", "agent", "stats"]
+  interval: 3s
+  timeout: 3s
+  retries: 5
+  start_period: 15s
+
+volumes:
+  public-er-1:
+  transit-router:
+  vpc1-er:
+  vpc2-er:
+  corp-er:
+  home-er:
+
+networks:
+  ziti:
+    name: ${ZITI_NETWORK:-zo-ctrl}
+    external: true
+  internet:
+    name: zo-internet
+    driver: bridge
+  vpc1:
+    name: zo-vpc1
+    driver: bridge
+  vpc2:
+    name: zo-vpc2
+    driver: bridge
+  home:
+    name: zo-home
+    driver: bridge
+  corp:
+    name: zo-corp
+    driver: bridge
+
+services:
+  # ---------------- public-er-1 : internet edge, tunneler host ----------------
+  chown-public-er-1:
+    image: busybox
+    command: chown -R ${ZIGGY_UID:-2171} /ziti-router
+    volumes: [public-er-1:/ziti-router]
+  public-er-1:
+    image: ${ZITI_ROUTER_IMAGE:-openziti/ziti-router:2.0.0}
+    depends_on: { chown-public-er-1: { condition: service_completed_successfully } }
+    user: ${ZIGGY_UID:-2171}
+    volumes: [public-er-1:/ziti-router]
+    env_file: [../tokens/public-er-1.env]
+    environment:
+      <<: *router-env
+      ZITI_ROUTER_ADVERTISED_ADDRESS: public-er-1
+      ZITI_ROUTER_PORT: "3022"
+      ZITI_ROUTER_MODE: host
+    command: run config.yml
+    networks: { ziti: { aliases: [public-er-1] }, internet: {}, home: {} }
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:3022:3022"]
+    restart: unless-stopped
+    healthcheck: *router-healthcheck
+
+  # ---------------- transit-router : internet transit-only --------------------
+  chown-transit-router:
+    image: busybox
+    command: chown -R ${ZIGGY_UID:-2171} /ziti-router
+    volumes: [transit-router:/ziti-router]
+  transit-router:
+    image: ${ZITI_ROUTER_IMAGE:-openziti/ziti-router:2.0.0}
+    depends_on: { chown-transit-router: { condition: service_completed_successfully } }
+    user: ${ZIGGY_UID:-2171}
+    volumes: [transit-router:/ziti-router]
+    env_file: [../tokens/transit-router.env]
+    environment:
+      <<: *router-env
+      ZITI_ROUTER_ADVERTISED_ADDRESS: transit-router
+      ZITI_ROUTER_PORT: "3023"
+      ZITI_ROUTER_MODE: none
+    command: run config.yml
+    networks: { ziti: { aliases: [transit-router] }, internet: {} }
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:3023:3023"]
+    restart: unless-stopped
+    healthcheck: *router-healthcheck
+
+  # ---------------- vpc1-er : vpc1 edge, tunneler host ------------------------
+  chown-vpc1-er:
+    image: busybox
+    command: chown -R ${ZIGGY_UID:-2171} /ziti-router
+    volumes: [vpc1-er:/ziti-router]
+  vpc1-er:
+    image: ${ZITI_ROUTER_IMAGE:-openziti/ziti-router:2.0.0}
+    depends_on: { chown-vpc1-er: { condition: service_completed_successfully } }
+    user: ${ZIGGY_UID:-2171}
+    volumes: [vpc1-er:/ziti-router]
+    env_file: [../tokens/vpc1-er.env]
+    environment:
+      <<: *router-env
+      ZITI_ROUTER_ADVERTISED_ADDRESS: vpc1-er
+      ZITI_ROUTER_PORT: "3024"
+      ZITI_ROUTER_MODE: host
+    command: run config.yml
+    networks: { ziti: { aliases: [vpc1-er] }, internet: {}, vpc1: {} }
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:3024:3024"]
+    restart: unless-stopped
+    healthcheck: *router-healthcheck
+
+  # ---------------- vpc2-er : vpc2 edge, tunneler host (hosts svcs) -----------
+  chown-vpc2-er:
+    image: busybox
+    command: chown -R ${ZIGGY_UID:-2171} /ziti-router
+    volumes: [vpc2-er:/ziti-router]
+  vpc2-er:
+    image: ${ZITI_ROUTER_IMAGE:-openziti/ziti-router:2.0.0}
+    depends_on: { chown-vpc2-er: { condition: service_completed_successfully } }
+    user: ${ZIGGY_UID:-2171}
+    volumes: [vpc2-er:/ziti-router]
+    env_file: [../tokens/vpc2-er.env]
+    environment:
+      <<: *router-env
+      ZITI_ROUTER_ADVERTISED_ADDRESS: vpc2-er
+      ZITI_ROUTER_PORT: "3025"
+      ZITI_ROUTER_MODE: host
+    command: run config.yml
+    networks: { ziti: { aliases: [vpc2-er] }, vpc1: {}, vpc2: {} }
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:3025:3025"]
+    restart: unless-stopped
+    healthcheck: *router-healthcheck
+
+  # ---------------- corp-er : corp edge, tunneler host -----------------------
+  chown-corp-er:
+    image: busybox
+    command: chown -R ${ZIGGY_UID:-2171} /ziti-router
+    volumes: [corp-er:/ziti-router]
+  corp-er:
+    image: ${ZITI_ROUTER_IMAGE:-openziti/ziti-router:2.0.0}
+    depends_on: { chown-corp-er: { condition: service_completed_successfully } }
+    user: ${ZIGGY_UID:-2171}
+    volumes: [corp-er:/ziti-router]
+    env_file: [../tokens/corp-er.env]
+    environment:
+      <<: *router-env
+      ZITI_ROUTER_ADVERTISED_ADDRESS: corp-er
+      ZITI_ROUTER_PORT: "3026"
+      ZITI_ROUTER_MODE: host
+    command: run config.yml
+    networks: { ziti: { aliases: [corp-er] }, internet: {}, corp: {} }
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:3026:3026"]
+    restart: unless-stopped
+    healthcheck: *router-healthcheck
+
+  # ---------------- home-er : home edge, tunneler tproxy ---------------------
+  chown-home-er:
+    image: busybox
+    command: chown -R ${ZIGGY_UID:-2171} /ziti-router
+    volumes: [home-er:/ziti-router]
+  home-er:
+    image: ${ZITI_ROUTER_IMAGE:-openziti/ziti-router:2.0.0}
+    depends_on: { chown-home-er: { condition: service_completed_successfully } }
+    user: ${ZIGGY_UID:-2171}
+    volumes: [home-er:/ziti-router]
+    env_file: [../tokens/home-er.env]
+    environment:
+      <<: *router-env
+      ZITI_ROUTER_ADVERTISED_ADDRESS: home-er
+      ZITI_ROUTER_PORT: "3027"
+      ZITI_ROUTER_MODE: host
+    command: run config.yml
+    networks: { ziti: { aliases: [home-er] }, home: {} }
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:3027:3027"]
+    restart: unless-stopped
+    healthcheck: *router-healthcheck

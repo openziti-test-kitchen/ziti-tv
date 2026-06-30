@@ -1,0 +1,37 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+dependencies {
+    implementation 'org.openziti:ziti:0.34.0'
+    implementation 'org.slf4j:slf4j-simple:2.0.5'
+}
+
+application {
+    mainClass = 'org.zo.interop.Main'
+}
+
+// Build a fat jar so the single image can run any app/role with `java -jar`.
+jar {
+    archiveBaseName = 'zo-sdk-java'
+    archiveVersion = ''
+    manifest {
+        attributes 'Main-Class': 'org.zo.interop.Main'
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    // Drop signature files from dependency jars so the merged jar stays loadable.
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+}

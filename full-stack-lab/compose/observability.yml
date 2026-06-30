@@ -1,0 +1,39 @@
+# Observability stack: Prometheus + Grafana (project zo).
+# Prometheus scrapes the controllers' /metrics (enable Ziti prometheus metrics first, see
+# observability/README.md). Grafana auto-provisions the Prometheus datasource.
+#
+# Bring up: docker compose -p zo -f compose/controllers.yml -f compose/observability.yml up -d prometheus grafana
+# Prometheus UI: http://localhost:9090   Grafana: http://localhost:3000 (admin/admin)
+#
+# NOTE (Windows/Git Bash): relative bind mounts can fail to parse here; run this from
+# PowerShell or WSL, or bake the configs into images. Not live-verified in the build sandbox.
+
+networks:
+  ziti:
+    name: ${ZITI_NETWORK:-zo-ctrl}
+    external: true
+
+volumes:
+  grafana-data:
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks: [ziti]
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:9090:9090"]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ../observability/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+    networks: [ziti]
+    ports: ["${ZITI_INTERFACE:-0.0.0.0}:3000:3000"]
+    restart: unless-stopped
