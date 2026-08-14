@@ -190,16 +190,23 @@ export DL=/mnt/c/Users/$USER/Downloads    # ~/Downloads on Linux/macOS
 # enrolls on first use: .jwt becomes <name>.json beside it, .jwt is deleted
 go run clients/reflect.go reflectService "$DL/<name>.jwt"
 
-go run clients/curlz.go httpService "$DL/<name>.json"
-go run clients/math.go  httpService "$DL/<name>.json" 6 '*' 7
+# these two take the name verbatim - prefix it yourself
+go run clients/curlz.go local_httpService "$DL/<name>.json"
+go run clients/math.go  local_httpService "$DL/<name>.json" 6 '*' 7
 
 # no identity file: orders one from /sample, reuses randomizer_*.json after
 go run clients/reflect.go reflectService
 ```
 
 `OPENZITI_APPETIZER_URL` points the clients at the local appetizer for the prefix (`/meta`) and, with no identity file,
-a token (`/sample`). With it set, `common.PrefixedName` turns `reflectService` into `local_reflectService` itself — so
-pass the **unprefixed** name. `local_reflectService` becomes `local_local_reflectService` and exits not-found.
+a token (`/sample`).
+
+The clients disagree on what to do with that prefix, so watch the argument:
+
+- `reflect.go:18` runs the name through `common.PrefixedName`, so pass **`reflectService`**. Passing
+  `local_reflectService` yields `local_local_reflectService` and exits not-found.
+- `curlz.go:15` and `math.go:18` use the argument verbatim as the URL host, so pass **`local_httpService`**. Passing
+  `httpService` exits with `service 'httpService' not found`.
 
 `ctx.Dial` reports an end-to-end encrypted connection: encrypted between the two SDK endpoints, so the router forwards
 ciphertext it cannot read.
@@ -344,8 +351,9 @@ so an advertised name has to resolve in both places.
 
 ## 13. Running your own on a real machine
 
-`docs/run-on-a-public-machine-with-docker.md`, or `docs/run-on-a-public-machine-without-docker.md` for two processes
-and systemd units.
+[`run-on-a-public-machine-with-docker.md`](run-on-a-public-machine-with-docker.md), or
+[`run-on-a-public-machine-without-docker.md`](run-on-a-public-machine-without-docker.md) for two processes and systemd
+units. Both live beside this file, not in the appetizer repo.
 
 The name split is the design. Four names on one wildcard: the app on 443, `ctrl.` for SDK clients and enrollment on the
 ziti-signed cert, `api.` for browsers on a Let's Encrypt cert via the controller's `alt_server_certs`, and `router.` on
@@ -394,18 +402,19 @@ informative artifact available.
 
 ## 15. What's next: AI-shaped services
 
-`docs/llm-mcp-integration-plan.md` is a plan, not shipped code.
+[`llm-mcp-integration-plan.md`](llm-mcp-integration-plan.md), beside this file, is a plan. None of the files it names
+exist in the repo yet.
 
 It adds two dark services beside `httpService` and `reflectService`: `llmService`, an OpenAI-compatible chat endpoint
 on `llm-gateway`, and `mcpService`, an MCP endpoint aggregating tools on `mcp-gateway`. No public IP, no open port, no
 API key to leak — nothing on the internet reaches it, your agent does.
 
-Phase 1: `overlay/proxyServer.go` binds the service and reverse-proxies to a loopback sidecar, `FlushInterval = -1`
-since chat completions and MCP are both SSE. Avoids pulling zrok, the Agora SDK and a second `sdk-golang` pin into a
-module that also builds for wasm.
+Phase 1: a new `overlay/proxyServer.go` binds the service and reverse-proxies to a loopback sidecar,
+`FlushInterval = -1` since chat completions and MCP are both SSE. Avoids pulling zrok, the Agora SDK and a second
+`sdk-golang` pin into a module that also builds for wasm.
 
-The client-side artifacts are the interesting part: `clients/llmproxy.go` on `127.0.0.1:8080` forwarding over the
-overlay so unmodified OpenAI clients work, and `clients/mcp.go` as a stdio-to-overlay bridge so a few lines of
+The client-side artifacts are the interesting part: a `clients/llmproxy.go` on `127.0.0.1:8080` forwarding over the
+overlay so unmodified OpenAI clients work, and a `clients/mcp.go` stdio-to-overlay bridge so a few lines of
 `mcpServers` config give an agent tools on an endpoint with no address.
 
 Phase 3: a `ziti:` transport contributed upstream to both gateways beside their zrok and Agora paths, making the
@@ -506,8 +515,11 @@ serve through the appetizer.
 response means a service worker, a proxy, or a static server setting its own headers. Fix: hard reload, disable cache
 in devtools.
 
-**`service name [local_local_reflectService] was not found`.** `OPENZITI_APPETIZER_URL` set *and* the prefixed name
+**`service name [local_local_reflectService] was not found`.** `reflect.go` prefixes for you and the prefixed name was
 passed. Fix: `go run clients/reflect.go reflectService <identity-file>`.
+
+**`service 'httpService' not found` from curlz or math.** Those two do not prefix — `curlz.go:15` and `math.go:18` take
+the argument verbatim. Fix: pass `local_httpService`.
 
 **`NO_EDGE_ROUTERS_AVAILABLE`.** No `edge-router-policy` or `service-edge-router-policy`. `router-bootstrap.sh` creates
 both — check the router got past its login loop.
