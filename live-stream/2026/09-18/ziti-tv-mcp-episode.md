@@ -1,9 +1,9 @@
 # 2026-09-18: somebody else's agent
 
-Episode 5 of the arc in [`season-arc.md`](../season-arc.md). The close.
+Episode 5 of the arc in [`season-arc.md`](../season-arc.md).
 
-Everything so far has been our agent using tools. This one hands the toolset to an agent we do not control, running on
-a machine we cannot reach.
+Everything so far has been our agent using tools. This one hands the toolset to an agent we do not control, on a
+machine we cannot reach.
 
 ## What gets built
 
@@ -20,8 +20,7 @@ port, and no API key to leak. Nothing on the internet can reach it. Their agent 
 
 ## Close the loop
 
-The first tool it gets is the classifier — the one that has been running this way since 2023, before anyone called it
-an agent, and which episode 1 spent a commit resurrecting.
+The first tool it gets is the classifier — the one episode 1 resurrected, running this way since 2023.
 
 ## Risk to name, as the plan does
 

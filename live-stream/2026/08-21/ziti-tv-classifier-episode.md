@@ -1,10 +1,7 @@
 # 2026-08-21: make the classifier real
 
 Episode 1 of the arc in [`season-arc.md`](../season-arc.md). Starts from a working appetizer — the 08-14 walkthrough
-gets you there. Do that before recording; it is not the show twice.
-
-The appetizer has been calling a model over the overlay since 2023 and nobody has seen it work. This episode makes it
-work.
+gets you there. Do that before recording.
 
 ## The bug that opens the episode
 
@@ -18,8 +15,7 @@ Unprefixed. A `local` instance creates `local_*` services, so `classifier-servic
 `IsOffensive` always returns `COULD_NOT_CLASSIFY` — the amber "can't be qualified at this time for offensiveness"
 every viewer of the last episode saw.
 
-Fix: route it through `common.PrefixedName`, or make it an env var. One commit, and it explains a message the audience
-already has questions about.
+Fix: route it through `common.PrefixedName`, or make it an env var.
 
 ## What the classifier contract actually is
 
@@ -43,8 +39,7 @@ actually offensive; `NOT_OFFENSIVE` is green; `COULD_NOT_CLASSIFY` is amber and 
 ## The decision to make on camera
 
 ollama's `/api/generate` does not return `[{label,score}]`. Either write a shim that adapts it, or change
-`IsOffensive` to parse a chat response. That difference is the difference between a classifier and an LLM, and it is
-the hinge the next episode turns on.
+`IsOffensive` to parse a chat response. That difference is the difference between a classifier and an LLM.
 
 ## Payoff
 

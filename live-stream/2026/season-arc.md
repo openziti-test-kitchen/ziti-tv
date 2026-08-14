@@ -1,11 +1,9 @@
 # Arc: from a dead classifier to somebody else's agent
 
-Four episodes. Each one ends with something visibly working that the next one builds on. The through-line: **the
-network decides what the model may reach, and what an agent may do.**
+Five episodes. Through-line: **the network decides what the model may reach, and what an agent may do.**
 
 The appetizer has been calling a model over the overlay since 2023 — `IsOffensive` in `overlay/reflectServer.go` POSTs
-to `classifier-service` over a zitified `http.Client`. That is the architecture the rest of the industry arrived at
-later. The arc starts by making it work again.
+to `classifier-service` over a zitified `http.Client`. It has not worked in a long time. Episode 1 fixes it.
 
 ---
 
@@ -55,9 +53,8 @@ the service policy live and watch the tool disappear from the agent's hands.
   doing the same thing.
 - `conn.SourceIdentifier()` is the session key and the user context — cryptographic identity, no application auth, no
   cookies, no bearer token.
-- The claim that is only true here: **service policy is the tool-permission boundary.** What the agent may dial is
-  what the agent may do, enforced by the network rather than by a prompt or an allowlist in code. The revoke is the
-  shot the whole arc builds toward.
+- **Service policy is the tool-permission boundary.** What the agent may dial is what the agent may do, enforced by
+  the network rather than by a prompt or an allowlist in code.
 
 ---
 
@@ -66,8 +63,7 @@ the service policy live and watch the tool disappear from the agent's hands.
 **Payoff on screen:** a viewer binds a tool on their laptop and the agent starts using it. Nothing is exposed, no port
 is opened, and the grant is a policy.
 
-This is the direction reversal the whole arc sets up. Episodes 1-3 gave the agent tools we host. Here a stranger
-supplies one.
+Episodes 1-3 gave the agent tools we host. Here a stranger supplies one.
 
 - The user runs a client that binds a service — same `ctx.ListenWithOptions` shape as `CreateZitiListener`, now on
   their machine.
@@ -80,7 +76,7 @@ supplies one.
 1. **The agent offers only tools bound by the identity it is currently talking to.** `conn.SourceIdentifier()` gives
    that for free. Without it, one stranger's tool runs inside another stranger's conversation.
 2. **Tool output enters the model's context**, so this is prompt injection from an untrusted party by design. Name it
-   on camera. It is the interesting problem here, not a flaw in the demo.
+   on camera.
 
 **Free callback:** close the laptop and the tool dies with `service <id> has no terminators` — the same error episode
 1 spent a commit explaining.
