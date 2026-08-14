@@ -1,12 +1,10 @@
 # The OpenZiti appetizer
 
 https://appetizer.openziti.io exists so trying OpenZiti costs nothing. Put a name in the box and you get an identity
-you can come back to; skip it and you get a random one. Either way you walk away with a token and a client that dials
-two services on a network you did not build, from a machine with nothing installed and nothing listening.
+you can come back to; skip it and you get a random one.
 
-This builds your own appetizer from `git clone` and explains the parts that are not obvious. Assumes TCP, TLS, DNS,
-reverse proxies, mTLS. If OpenZiti's vocabulary is new, read https://openziti.io/docs/learn/introduction/ first —
-section 3 is a reminder, not a tutorial.
+This builds your own from `git clone`. Assumes TCP, TLS, DNS, reverse proxies, mTLS. New to OpenZiti's vocabulary:
+https://openziti.io/docs/learn/introduction/
 
 Commands are tagged **[ubuntu]** (WSL Ubuntu, repo root), **[pwsh]** (elevated Windows PowerShell), or **[brave]**.
 On Linux/macOS it is all one shell.
@@ -68,7 +66,7 @@ Both take minutes. Read step 3.
 - **Service policy** — who dials, who binds. Here: a dial policy for `#local_demo.clients`, a bind policy for
   `#local_demo.servers`, both on services tagged `#local_demo-services`.
 
-The point: a server binds a service by dialing *out* to a router. It never listens. No inbound socket to scan.
+A server binds a service by dialing *out* to a router. It never listens. No inbound socket to scan.
 
 Three containers: `quickstart` (controller, `--no-router`), `router` (configured by this repo — step 12), `appetizer`.
 
@@ -89,10 +87,8 @@ docker compose ps    # init-ziti-dir exited 0, other three up
 That `up` minted the PKI in `./.ziti` — root CA, intermediate, server certs for controller and router. Delete the
 directory, get a different network.
 
-`ps` showing everything up does not mean the services are dialable. The appetizer still has to authenticate, create
-both services, and establish a listener per service. Give it a minute; dialing early fails with
-`service <id> has no terminators`. `docker compose logs appetizer | grep "listener established"` is the real ready
-signal — one line per service.
+`Up` is not dialable. Dialing before the appetizer binds fails with `service <id> has no terminators`. The ready
+signal is `docker compose logs appetizer | grep "listener established"`, one line per service, under a minute.
 
 ---
 
@@ -102,8 +98,7 @@ The browser client hits the controller's edge client API and opens a WebSocket t
 come from the CA just generated, and a page cannot skip verification. Untrusted fails with a message naming neither
 certs nor the CA. CLI clients enroll instead and carry the CA inside.
 
-Every clone has its own `.ziti` and its own CA. `$APPETIZER_PATH` has to be the clone the running stack came from, not
-whichever one you imported from last time.
+Every clone has its own `.ziti` and its own CA. `$APPETIZER_PATH` must be the clone the running stack came from.
 
 ```powershell
 # [pwsh] elevated. drop any CA from a previous run - a stale one fails exactly like no CA
@@ -170,12 +165,11 @@ http://localhost:18000/ — the public site as the `local` instance instead of `
 `/meta` shows the instance prefix. One appetizer per instance name, many sharing one controller, because
 `Server.scopedName` prefixes every entity it creates.
 
-The prefix comes from `OPENZITI_DEMO_INSTANCE`, set to `local` at `docker-compose.yml:81`. Unset, `main.go:20` falls
-back to the hostname. Set to `prod` it scopes to nothing — that is why the public site's services are bare
-`reflectService` and `httpService` while yours are `local_reflectService` and `local_httpService`.
+The prefix is `OPENZITI_DEMO_INSTANCE`, set to `local` at `docker-compose.yml:81`. Unset, `main.go:20` uses the
+hostname. `prod` scopes to nothing — hence bare `reflectService` on the public site, `local_reflectService` here.
 
-Clients never read that variable. `common.PrefixedName` asks `/meta` for it (`clients/common/common.go:235`), which is
-what `OPENZITI_APPETIZER_URL` in step 8 is pointing at.
+Clients never read it. `common.PrefixedName` asks `/meta` (`clients/common/common.go:235`), which is what
+`OPENZITI_APPETIZER_URL` in step 8 points at.
 
 Submit a name: the server deletes any identity using it, creates one with the `local_demo.clients` attribute, renders
 `add-to-openziti-response.html` with the token id and both service names. `/download-token?token=<identity-id>` returns
@@ -213,11 +207,11 @@ go run clients/reflect.go reflectService
 `OPENZITI_APPETIZER_URL` points the clients at the local appetizer for the prefix (`/meta`) and, with no identity file,
 a token (`/sample`).
 
-The clients disagree on what to do with that prefix, so watch the argument:
+The clients disagree on that prefix:
 
-- `reflect.go:18` runs the name through `common.PrefixedName`, so pass **`reflectService`**. Passing
-  `local_reflectService` yields `local_local_reflectService` and exits not-found.
-- `curlz.go:15` and `math.go:18` use the argument verbatim as the URL host, so pass **`local_httpService`**. Passing
+- `reflect.go:18` runs the name through `common.PrefixedName` — pass **`reflectService`**. `local_reflectService`
+  yields `local_local_reflectService` and exits not-found.
+- `curlz.go:15` and `math.go:18` use the argument verbatim as the URL host — pass **`local_httpService`**.
   `httpService` exits with `service 'httpService' not found`.
 
 `ctx.Dial` reports an end-to-end encrypted connection: encrypted between the two SDK endpoints, so the router forwards
@@ -231,9 +225,9 @@ Replies say the message "can't be qualified at this time for offensiveness". The
 in production, not here, so the dial fails, result is `COULD_NOT_CLASSIFY`, message relays anyway — one dark service
 calling another by name. A local `go-away` check runs first and refuses to relay outright.
 
-`curlz` and `math` are the shape worth taking: `common.NewZitifiedHttpClient` clones `http.DefaultTransport` and swaps
-`DialContext` for `ctx.Dial(serviceName)`. URL is `http://httpService/domath?...`. Stock `net/http`, no address, and
-the hostname is a service name.
+`curlz` and `math`: `common.NewZitifiedHttpClient` clones `http.DefaultTransport` and swaps `DialContext` for
+`ctx.Dial(serviceName)`. URL is `http://httpService/domath?...`. Stock `net/http`, no address, hostname is a service
+name.
 
 Reflect reads 1024-byte chunks and closes connections idle over 60 seconds. Clients redial on next send.
 
@@ -289,8 +283,8 @@ name into the same parameter.
 
 ## 11. Why the browser client is shaped this way
 
-One sentence explains most of `clients/wasm/main.go`: a browser can use any credential that travels *in the request*,
-and none that must be presented during the TLS handshake.
+A browser can use any credential that travels *in the request*, and none that must be presented during the TLS
+handshake. That governs everything in `clients/wasm/main.go`.
 
 **The credential.** OpenZiti certificate auth is mutual TLS. No JavaScript API attaches a client certificate, so a
 certificate identity fails `INVALID_AUTH` from a page however it was obtained — and installing it in the browser's own
@@ -363,9 +357,6 @@ so an advertised name has to resolve in both places.
 
 ## 13. Running your own on a real machine
 
-Everything below is the shape of it. Two runbooks exist with the exact commands — one docker, one two processes and
-systemd units — and are not published yet.
-
 The name split is the design. Four names on one wildcard: the app on 443, `ctrl.` for SDK clients and enrollment on the
 ziti-signed cert, `api.` for browsers on a Let's Encrypt cert via the controller's `alt_server_certs`, and `router.` on
 3022 serving ziti on `tls:` and Let's Encrypt on `wss:` — step 12's ALPN split with two issuers behind it.
@@ -406,8 +397,8 @@ docker compose stop router
 docker compose start router
 ```
 
-Failures here are almost always certificate trust, ALPN, or a missing policy, and the client-side message is the least
-informative artifact available.
+Failures here are certificate trust, ALPN, or a missing policy. The client-side message is the least informative
+artifact available.
 
 ---
 
@@ -423,9 +414,9 @@ Phase 1: a new `overlay/proxyServer.go` binds the service and reverse-proxies to
 `FlushInterval = -1` since chat completions and MCP are both SSE. Avoids pulling zrok, the Agora SDK and a second
 `sdk-golang` pin into a module that also builds for wasm.
 
-The client-side artifacts are the interesting part: a `clients/llmproxy.go` on `127.0.0.1:8080` forwarding over the
-overlay so unmodified OpenAI clients work, and a `clients/mcp.go` stdio-to-overlay bridge so a few lines of
-`mcpServers` config give an agent tools on an endpoint with no address.
+Client side: a `clients/llmproxy.go` on `127.0.0.1:8080` forwarding over the overlay so unmodified OpenAI clients work,
+and a `clients/mcp.go` stdio-to-overlay bridge so a few lines of `mcpServers` config give an agent tools on an endpoint
+with no address.
 
 Phase 3: a `ziti:` transport contributed upstream to both gateways beside their zrok and Agora paths, making the
 appetizer's wiring deletable.
