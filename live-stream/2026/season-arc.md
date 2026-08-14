@@ -1,6 +1,6 @@
 # Arc: from a dead classifier to somebody else's agent
 
-Five episodes. Through-line: **the network decides what the model may reach, and what an agent may do.**
+Six episodes. Through-line: **the network decides what the model may reach, and what an agent may do.**
 
 The appetizer has been calling a model over the overlay since 2023 — `IsOffensive` in `overlay/reflectServer.go` POSTs
 to `classifier-service` over a zitified `http.Client`. It has not worked in a long time. Episode 1 fixes it.
@@ -96,6 +96,20 @@ Episodes 1-3 gave the agent tools we host. Here a stranger supplies one.
 
 **Risk to name, as the plan does:** every identity the appetizer ever minted can dial these, and identities go to
 anyone who asks. `dummy-model` by default, MCP tools allowlisted read-only.
+
+---
+
+## 6. Delete it, use Agora
+
+**Payoff on screen:** our tool wiring deleted, replaced by Agora's catalog and sessions, with the agent behaving
+identically — then an agent in a different organization using a capability, which episodes 1-5 could not do at all.
+
+- Episodes 4 and 5 hand-rolled a catalog and a permission model out of services, policies and role attributes.
+  https://github.com/openziti/agora already has them: workgroups, catalog, advertisements, sessions, contracts,
+  envelopes, on top of the same OpenZiti fabric.
+- Our dial policy is binary. Agora has sessions bounded by contracts and auditable envelopes.
+- `examples/macro-pulse` runs eight agents across five organizations where no provider hands its raw feed to anyone.
+- A2A, not just MCP. Episodes 3-5 were agent-to-tools; this is agent-to-agent.
 
 ---
 
