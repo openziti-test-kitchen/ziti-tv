@@ -89,6 +89,11 @@ docker compose ps    # init-ziti-dir exited 0, other three up
 That `up` minted the PKI in `./.ziti` — root CA, intermediate, server certs for controller and router. Delete the
 directory, get a different network.
 
+`ps` showing everything up does not mean the services are dialable. The appetizer still has to authenticate, create
+both services, and establish a listener per service. Give it a minute; dialing early fails with
+`service <id> has no terminators`. `docker compose logs appetizer | grep "listener established"` is the real ready
+signal — one line per service.
+
 ---
 
 ## 5. Trust the CA
@@ -163,7 +168,14 @@ Fix a warning here or every browser failure downstream traces back to it.
 http://localhost:18000/ — the public site as the `local` instance instead of `prod`.
 
 `/meta` shows the instance prefix. One appetizer per instance name, many sharing one controller, because
-`Server.scopedName` prefixes every entity. `prod` prefixes nothing.
+`Server.scopedName` prefixes every entity it creates.
+
+The prefix comes from `OPENZITI_DEMO_INSTANCE`, set to `local` at `docker-compose.yml:81`. Unset, `main.go:20` falls
+back to the hostname. Set to `prod` it scopes to nothing — that is why the public site's services are bare
+`reflectService` and `httpService` while yours are `local_reflectService` and `local_httpService`.
+
+Clients never read that variable. `common.PrefixedName` asks `/meta` for it (`clients/common/common.go:235`), which is
+what `OPENZITI_APPETIZER_URL` in step 8 is pointing at.
 
 Submit a name: the server deletes any identity using it, creates one with the `local_demo.clients` attribute, renders
 `add-to-openziti-response.html` with the token id and both service names. `/download-token?token=<identity-id>` returns
@@ -351,9 +363,8 @@ so an advertised name has to resolve in both places.
 
 ## 13. Running your own on a real machine
 
-[`run-on-a-public-machine-with-docker.md`](run-on-a-public-machine-with-docker.md), or
-[`run-on-a-public-machine-without-docker.md`](run-on-a-public-machine-without-docker.md) for two processes and systemd
-units. Both live beside this file, not in the appetizer repo.
+Everything below is the shape of it. Two runbooks exist with the exact commands — one docker, one two processes and
+systemd units — and are not published yet.
 
 The name split is the design. Four names on one wildcard: the app on 443, `ctrl.` for SDK clients and enrollment on the
 ziti-signed cert, `api.` for browsers on a Let's Encrypt cert via the controller's `alt_server_certs`, and `router.` on
@@ -402,8 +413,7 @@ informative artifact available.
 
 ## 15. What's next: AI-shaped services
 
-[`llm-mcp-integration-plan.md`](llm-mcp-integration-plan.md), beside this file, is a plan. None of the files it names
-exist in the repo yet.
+There is a written plan for this. None of the files it names exist in the repo yet.
 
 It adds two dark services beside `httpService` and `reflectService`: `llmService`, an OpenAI-compatible chat endpoint
 on `llm-gateway`, and `mcpService`, an MCP endpoint aggregating tools on `mcp-gateway`. No public IP, no open port, no
@@ -523,6 +533,11 @@ the argument verbatim. Fix: pass `local_httpService`.
 
 **`NO_EDGE_ROUTERS_AVAILABLE`.** No `edge-router-policy` or `service-edge-router-policy`. `router-bootstrap.sh` creates
 both — check the router got past its login loop.
+
+**`unable to dial service '<name>' (dial failed: service <id> has no terminators)`.** Nothing is bound. Either the
+appetizer has not finished starting, or it is not running. Fix: wait for
+`docker compose logs appetizer | grep "listener established"` to show one line per service. Under a minute from
+`compose up` on a warm machine.
 
 **Everything was working, now every client is broken.** The appetizer restarted and `OPENZITI_RECREATE_NETWORK`
 defaults true. Fix: reconnect, set it `false`.
