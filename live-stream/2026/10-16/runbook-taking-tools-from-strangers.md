@@ -13,13 +13,13 @@ Joey drives; Clint does commentary and asks questions.
 * **Ziggy** (`local_ziggy`) is the honest user. Her tool, `whereami`, reports her machine's name, OS and local time.  
 * **Mallory** (`local_mallory`) is security's traditional name for the bad guy. Her `weather` tool has an injection hidden in its description and its output.
 
-**The files.** `episode4-files.zip` unzips into the Appetizer clone. It adds `byo/` (`grant.sh`, `reset.sh`, `host.py`, `dial.py`, `check.py`, `tools/whereami.py`, `tools/mallory.py`) and replaces `agent/agent.py`.
+**The files.** [`files/`](files/), next to this runbook, copies into the Appetizer clone. It adds `byo/` (`host.py`, `dial.py`, `tools/whereami.py`, `tools/mallory.py`) and replaces `agent/agent.py`.
 
 **The terminals.** Terminals 1 to 7 are episode 3's; 8 to 10 are new. Every terminal except Ollama's runs in the Appetizer clone, because the commands use paths relative to it.
 
 | Terminal | Role | Runs | Directory |
 | ----- | ----- | ----- | ----- |
-| 1 | Commands | `docker compose`, `ziti`, `grant.sh`, `reset.sh` | Appetizer clone |
+| 1 | Commands | `docker compose`, `ziti` | Appetizer clone |
 | 2 | Ziggy's client | Reflect client as `local_ziggy` | Appetizer clone |
 | 3 | Classifier logs | Episode 3; can stay hidden | Appetizer clone |
 | 4 | LLM Gateway | Episode 3; can stay hidden | Appetizer clone |
@@ -44,11 +44,14 @@ docker run --rm -it --network appetizer_default \
 
 Prep ends with episode 3's stack running, Mallory enrolled, one full rehearsal done, and no `byo` services or policies left on the network.
 
-**1\. Install the files.** In Terminal 1, from the Appetizer clone, back up episode 3's agent and unzip:
+**1\. Install the files.** In Terminal 1, from the Appetizer clone, back up episode 3's agent and copy this episode's
+files in:
 
 ```sh
 cp agent/agent.py agent/agent.ep3.py
-unzip -o ~/Downloads/episode4-files.zip
+git clone --depth 1 https://github.com/openziti-test-kitchen/ziti-tv /tmp/ziti-tv
+cp -r /tmp/ziti-tv/live-stream/2026/10-16/files/. .
+rm -rf /tmp/ziti-tv
 ```
 
 No new Python packages are needed; `anyio` comes with `mcp`.
@@ -115,10 +118,18 @@ mcp-gateway run gateway/mcp-gateway.yml
 **6\. Reset after the rehearsal.**
 
 * Press Ctrl-C in Terminals 8 and 9\.  
-* Run `docker compose exec -T quickstart sh < byo/reset.sh` in Terminal 1\.  
+* In Terminal 1, delete every `byo` policy and service:
+
+```sh
+docker compose exec quickstart ziti delete service-policies where 'name contains "byo-"'
+docker compose exec quickstart ziti delete services where 'anyOf(roleAttributes) = "byo-tools"'
+docker compose exec quickstart ziti list services 'name contains "byo-"'
+```
+
+  The last command should print `results: none`.  
 * Restart the agent in Terminal 7\. The agent keeps each caller's conversation in memory, so without a restart, Mallory's sponsor line and Ziggy's history carry over into the show.
 
-If you rerun `agent/wire-up.sh` for any reason, run `reset.sh` afterward. `byo-tools-dial` names the agent's identity, which `wire-up.sh` recreates, and `grant.sh` won't replace a policy that already exists.
+If you rerun episode 3's `agent/wire-up.sh` for any reason, run the reset commands above afterward, then the grants. `byo-tools-dial` names the agent's identity, which `wire-up.sh` recreates.
 
 ## **Right before going live**
 
@@ -142,7 +153,10 @@ You want the containers `Up`, `local_httpService`, `local_reflectService` and `c
 **Terminal 7:** start the new agent.
 
 ```sh
-. agent/terminal.sh
+# leave the agent only its own virtual key, which LLM Gateway accepts on the tools route alone
+. gateway/env.sh
+unset ANTHROPIC_API_KEY CLASSIFIER_GATEWAY_KEY MY_GATEWAY_KEY OPENAI_API_KEY
+export ZITI_IDENTITY="$PWD/.ziti/agent.json"
 .venv/bin/python agent/agent.py
 ```
 
@@ -167,13 +181,27 @@ Episode 3 ended on: "giving different callers different tools means policies tha
 Terminal 1:
 
 ```sh
-docker compose exec -T -e BYO_ID=local_ziggy quickstart sh < byo/grant.sh
+# a service for Ziggy's tool, tagged as a tool
+docker compose exec quickstart ziti create service byo-local_ziggy --role-attributes byo-tools
+
+# only local_ziggy may host it
+docker compose exec quickstart ziti create service-policy byo-local_ziggy-bind Bind \
+  --identity-roles '@local_ziggy' --service-roles '@byo-local_ziggy'
+
+# the agent may dial any service tagged #byo-tools. Created once, for everyone
+docker compose exec quickstart ziti create service-policy byo-tools-dial Dial \
+  --identity-roles '@agent-service-host' --service-roles '#byo-tools'
+
+docker compose exec quickstart ziti list service-policies 'name contains "byo"'
 ```
 
 Point at the table:
 
 * `byo-local_ziggy-bind` lets only `@local_ziggy` host her service.  
 * `byo-tools-dial` lets the agent dial anything tagged `#byo-tools`.
+
+If `create service-policy` fails with `@local_ziggy` not found, the identity name is wrong. Names are case-sensitive
+and start with `local_`.
 
 Say: one service and one policy per person. In production, this script would be an Appetizer endpoint, using the same management API as `Prepare`.
 
@@ -218,8 +246,13 @@ Expect `the network refused to let this identity host byo-local_ziggy: service n
 Terminal 1:
 
 ```sh
-docker compose exec -T -e BYO_ID=local_mallory quickstart sh < byo/grant.sh
+docker compose exec quickstart ziti create service byo-local_mallory --role-attributes byo-tools
+docker compose exec quickstart ziti create service-policy byo-local_mallory-bind Bind \
+  --identity-roles '@local_mallory' --service-roles '@byo-local_mallory'
+docker compose exec quickstart ziti list service-policies 'name contains "byo"'
 ```
+
+`byo-tools-dial` already exists from step 1, and its `#byo-tools` role picks up Mallory's service with no change.
 
 Terminal 9:
 
@@ -259,7 +292,7 @@ docker compose exec quickstart ziti delete service-policy byo-tools-dial
 
 * **The network cut it off.** Mallory says `hi` again in Terminal 10\. Terminal 7 shows `byo-dial: byo-local_mallory: service not available` and `own tools: none`, with her host still running in Terminal 9\. Her `hi` was already clean in step 6, so point at Terminal 7, not at the reply.  
 * **Say:** "One command took away every stranger's tool, poisoned or not, starting with the very next question." Her earlier injection is still in her conversation history, though. The kill switch stops new injections; it can't remove one the model has already read.  
-* **Restore it** by rerunning Mallory's grant from step 5\. It recreates only the missing `byo-tools-dial`, and the table lists three policies again.
+* **Restore it** by rerunning the `byo-tools-dial` command from step 1\. `ziti list service-policies 'name contains "byo"'` lists three policies again.
 
 ### **9\. Discussion with Clint (4 min)**
 
@@ -277,9 +310,10 @@ Most live problems come from stale state: an old conversation in the agent, a po
 | `appetizer` is `Exited (1)` after a Docker restart | It started before the controller was ready | `docker compose restart appetizer`, then recreate `math-tool-dial` |
 | The math tool fails, and `math-tool-dial` shows a blank `SERVICE ROLES` | The Appetizer restarted and recreated `local_httpService` | Delete and recreate `math-tool-dial`, as in prep step 2 |
 | `printenv GATEWAY_URL` prints nothing, and the classifier never escalates | `docker compose up` ran without `env.sh` and `GATEWAY_URL` in the shell | Source `env.sh`, export `GATEWAY_URL`, then run `docker compose up -d classifier` |
-| `grant.sh` says `no identity named …` | A typo, or the identity was never minted | Names are case-sensitive and start with `local_`; check `docker compose exec quickstart ziti list identities` |
-| `host.py` refuses to host the person's own service | `grant.sh` wasn't run for that identity | Run the grant, then start the host again |
-| Agent logs `own tools: none` while a host is running | `byo-tools-dial` names an old agent identity, after a `wire-up.sh` rerun | Stop the hosts, run `reset.sh`, rerun both grants, restart the hosts |
+| `create service-policy … Bind` names an identity that doesn't exist | A typo, or the identity was never minted | Names are case-sensitive and start with `local_`; check `docker compose exec quickstart ziti list identities` |
+| `create service` says the name is already in use | The grant ran before, and the service is still there | Nothing to do; run only the commands whose objects are missing |
+| `host.py` refuses to host the person's own service | The grant wasn't run for that identity | Run the grant, then start the host again |
+| Agent logs `own tools: none` while a host is running | `byo-tools-dial` names an old agent identity, after a `wire-up.sh` rerun | Stop the hosts, run the reset commands from prep step 6, rerun both grants, restart the hosts |
 | `host.py` keeps running, but `ziti list terminators` doesn't show its service | Its service was deleted and recreated underneath it | Ctrl-C and start the host again |
 | `connection timed out, redialing connection...` in a reflect client | The connection went idle | Harmless; it succeeds on the next try |
 | `the cached access token has expired` from `ziti` | The admin session timed out | Run the login from "Right before going live" again |
@@ -290,7 +324,7 @@ Most live problems come from stale state: an old conversation in the agent, a po
 Stop the hosts first, then remove the episode's services and policies. The identities stay, because they belong to the people who asked for them.
 
 1. Press Ctrl-C in Terminals 8 and 9\.  
-2. In Terminal 1, run `docker compose exec -T quickstart sh < byo/reset.sh`.  
+2. In Terminal 1, run the two `ziti delete` commands from prep step 6.  
 3. To put episode 3's agent back, run `cp agent/agent.ep3.py agent/agent.py` and restart Terminal 7\.  
 * Push the code to the episode 4 repo, with a stub README if the full write-up waits until after November 9  
 * Fix the "Coming next" line in episode 3's README to point at this episode  

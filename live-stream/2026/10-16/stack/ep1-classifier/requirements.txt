@@ -1,0 +1,10 @@
+# The bindings API this code uses (zitify + bindings dict) is stable as of 1.7.x
+openziti==1.7.1
+flask>=3.0
+# waitress, not Flask's built-in server - see the note in classifier.py
+waitress>=3.0
+transformers>=4.40
+# CPU wheels only; the Dockerfile installs torch from the CPU index first, so
+# this line is already satisfied by the time pip reads it. The default index
+# pulls a multi-gigabyte CUDA build that a 125M-parameter classifier cannot use.
+torch

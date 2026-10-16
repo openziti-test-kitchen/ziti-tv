@@ -1,0 +1,41 @@
+# Episode 3: mcp-gateway in front of the appetizer's dark services.
+#
+#   mcp-gateway run ep3-mcp-gateway/mcp-gateway.yml
+
+# A persistent zrok2 share, so the agent's address survives gateway restarts.
+# Create your own with: zrok2 create share -s <name>. compose replaces this name with SHARE from .env.
+share_token: "ziti-tv-appetizer"
+
+session_idle_timeout: 30m
+
+aggregator:
+  name: "appetizer-tools"
+  version: "0.3.0"
+  # Tools reach agents as <backend id><separator><tool>, e.g. appetizer_math.
+  # Keep "_": OpenAI and Anthropic tool names allow only letters, digits, _ and -.
+  separator: "_"
+  connection:
+    connect_timeout: 30s
+    call_timeout: 60s
+
+backends:
+  - id: appetizer
+    name: "The Appetizer's dark services"
+    transport:
+      type: stdio
+      command: "/usr/local/bin/python"
+      args: ["/stack/ep3-mcp-gateway/tools/server.py"]
+      # Start the tool server with exactly these variables, and nothing from the
+      # gateway's own environment. The tools need no keys.
+      env_policy: closed
+      env:
+        ZITI_IDENTITY: "/ziti/appetizer-tools.json"
+        MATH_SERVICE: "local_httpService"
+        CLASSIFY_SERVICE: "classifier-service"
+        ZITI_LOG: "2"
+    # The operator's menu. Enforced when the gateway starts: a tool not on this
+    # list never reaches an agent. Service policy is the network's version,
+    # enforced on every call.
+    tools:
+      mode: allow
+      list: ["math", "classify"]
