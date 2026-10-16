@@ -1,0 +1,300 @@
+# The four episodes of the Appetizer agent arc, as one compose project. Each episode's README starts the services it
+# adds, and creates their identities, services and policies with `docker compose exec quickstart ziti ...`. Start
+# with ep1-classifier/README.md.
+#
+# Every directory here is one episode's files:
+#   ziti/                the Appetizer's own network: controller, router, and the Appetizer
+#   ep1-classifier/      episode 1: the classifier, hosting classifier-service
+#   ep2-llm-gateway/     episode 2: LLM Gateway, which the classifier asks for a second opinion
+#   ep3-mcp-gateway/     episode 3: MCP Gateway, the tool server behind it, and the agent
+#   ../files/            episode 4: bring-your-own tools (profiles ep4 and client)
+#
+# ./.ziti holds the whole network: the controller's PKI, its database, and every identity. `docker compose down`
+# keeps it. Deleting it means a new network, and every identity enrolled against the old one stops working.
+
+# Fixed, so the project does not take its name from this directory, `stack`. Set COMPOSE_PROJECT_NAME in .env to run
+# a second copy next to this one.
+name: ziti-tv
+
+services:
+  # ./.ziti is a bind mount, so docker creates it root owned, and the ziti image runs as uid 2171 and cannot write
+  # it. This hands it over before anything else starts.
+  init-ziti-dir:
+    image: busybox
+    user: root
+    command: sh -c "mkdir -p /ziti && chown -R 2171:2171 /ziti && chmod -R a+rX /ziti"
+    volumes:
+      - ./.ziti:/ziti
+
+  quickstart:
+    image: openziti/ziti-cli:${ZITI_VERSION:-2.0.8}
+    depends_on:
+      init-ziti-dir:
+        condition: service_completed_successfully
+    command: >-
+      edge quickstart --no-router --home /ziti
+      --ctrl-address quickstart.127.0.0.1.nip.io --ctrl-port ${CTRL_PORT:-1280}
+      --password "${ZITI_PWD:?set ZITI_PWD in .env}"
+    healthcheck:
+      # This passes before the quickstart has created the admin user, so the router and the Appetizer each retry
+      # their first login. Do not log in here instead: a login every interval expires the sessions
+      # of everything else logged in as admin.
+      test: ["CMD", "curl", "-sk", "https://localhost:${CTRL_PORT:-1280}/edge/client/v1/version"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+    environment:
+      - PFXLOG_NO_JSON=true
+      - ZITI_CTRL_EDGE_ADVERTISED_ADDRESS=quickstart.127.0.0.1.nip.io
+      - ZITI_CTRL_EDGE_ADVERTISED_PORT=${CTRL_PORT:-1280}
+    volumes:
+      - ./.ziti:/ziti
+    networks:
+      default:
+        # the controller advertises this name, so it has to resolve to this container inside the network as well as
+        # to 127.0.0.1 on the host
+        aliases:
+          - quickstart.127.0.0.1.nip.io
+    ports:
+      - ${CTRL_PORT:-1280}:${CTRL_PORT:-1280}
+
+  router:
+    image: openziti/ziti-cli:${ZITI_VERSION:-2.0.8}
+    # a fresh controller can expire the first admin session within seconds, and the bootstrap then exits on a 401.
+    # Running it again is safe: it re-enrolls only if the router has no certificate yet.
+    restart: on-failure
+    depends_on:
+      quickstart:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/etc/ziti/router-bootstrap.sh"]
+    healthcheck:
+      # any HTTP answer means the listener is up; the router answers 404 over https
+      test: ["CMD", "curl", "-sk", "-o", "/dev/null", "https://localhost:${ROUTER_PORT:-3022}/"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    environment:
+      - PFXLOG_NO_JSON=true
+      - ZITI_CTRL=https://quickstart.127.0.0.1.nip.io:${CTRL_PORT:-1280}
+      - ZITI_USER=admin
+      - ZITI_PWD=${ZITI_PWD:?set ZITI_PWD in .env}
+      - ZITI_HOME=/ziti
+      - ROUTER_NAME=compose-router
+      - ROUTER_PORT=${ROUTER_PORT:-3022}
+    volumes:
+      - ./.ziti:/ziti
+      - ./ziti/router.yaml:/etc/ziti/router.yaml:ro
+      - ./ziti/router-bootstrap.sh:/etc/ziti/router-bootstrap.sh:ro
+    networks:
+      default:
+        aliases:
+          - router.127.0.0.1.nip.io
+    ports:
+      # both edge listeners share this port, split by ALPN; see ziti/router.yaml
+      - ${ROUTER_PORT:-3022}:${ROUTER_PORT:-3022}
+
+  appetizer:
+    image: ${APPETIZER_IMAGE:-openziti/appetizer}
+    # it logs in once at startup and exits on a 401; it rebuilds its demo configuration on every start
+    restart: on-failure
+    depends_on:
+      router:
+        condition: service_healthy
+    healthcheck:
+      # the image has bash but no curl. The web page answers only after the demo configuration is built, which can take
+      # minutes on a network restored from a previous run.
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/18000 && printf 'GET / HTTP/1.0\r\n\r\n' >&3 && head -1 <&3 | grep -q ' 200 '
+      interval: 3s
+      timeout: 3s
+      start_period: 5m
+      retries: 3
+    environment:
+      - OPENZITI_CTRL=https://quickstart.127.0.0.1.nip.io:${CTRL_PORT:-1280}
+      - OPENZITI_USER=admin
+      - OPENZITI_PWD=${ZITI_PWD:?set ZITI_PWD in .env}
+      - OPENZITI_DEMO_INSTANCE=local
+    ports:
+      - ${APPETIZER_PORT:-18000}:18000
+
+  # Episode 1. Hosts classifier-service; the Appetizer's reflect server dials it for every message.
+  classifier:
+    build: ./ep1-classifier
+    depends_on:
+      router:
+        condition: service_healthy
+    environment:
+      - ZITI_IDENTITY=/identity/classifier.json
+      - CLASSIFIER_SERVICE=classifier-service
+      - CLASSIFIER_MODEL=cardiffnlp/twitter-roberta-base-offensive
+      - OFFENSIVE_LABELS=offensive
+      - CLASSIFIER_THRESHOLD=0.5
+      # Episode 2: clean verdicts below ESCALATE_BELOW get a second opinion from LLM Gateway. An empty GATEWAY_URL is
+      # episode 1's behavior.
+      - GATEWAY_URL=${CLASSIFIER_GATEWAY_URL-http://llm-gateway:8080}
+      - GATEWAY_KEY=${CLASSIFIER_GATEWAY_KEY:?set CLASSIFIER_GATEWAY_KEY in .env}
+      - ESCALATE_BELOW=0.9
+    volumes:
+      - ./.ziti:/identity:ro
+
+  # Episode 2's local models. Leave the ollama profile out of COMPOSE_PROFILES to use an Ollama outside compose.
+  ollama:
+    image: ollama/ollama
+    profiles: [ollama]
+    environment:
+      # every escalation can use three models at once, and a reload takes seconds
+      - OLLAMA_KEEP_ALIVE=-1
+      - OLLAMA_MAX_LOADED_MODELS=3
+      - OLLAMA_CONTEXT_LENGTH=8192
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+    volumes:
+      - ollama:/root/.ollama
+
+  ollama-pull:
+    image: ollama/ollama
+    profiles: [ollama]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull gemma3:4b && ollama pull nomic-embed-text"]
+
+  # Episode 2. Holds the provider key, and gives the classifier, you and the agent each a virtual key of their own.
+  llm-gateway:
+    build:
+      context: .
+      dockerfile: runtime.Dockerfile
+    image: ziti-tv-10-16/runtime
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+        required: false
+    command: ["llm-gateway", "run", "/stack/ep2-llm-gateway/llm-gateway.yml"]
+    healthcheck:
+      # it listens only after the semantic router has embedded every route example
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8080/"]
+      interval: 3s
+      timeout: 3s
+      retries: 100
+    environment:
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY in .env}
+      - CLASSIFIER_GATEWAY_KEY=${CLASSIFIER_GATEWAY_KEY:?set CLASSIFIER_GATEWAY_KEY in .env}
+      - MY_GATEWAY_KEY=${MY_GATEWAY_KEY:?set MY_GATEWAY_KEY in .env}
+      - AGENT_GATEWAY_KEY=${AGENT_GATEWAY_KEY:?set AGENT_GATEWAY_KEY in .env}
+    volumes:
+      - ./:/stack:ro
+    ports:
+      # for `ask` and `judge` from gateway/helpers.sh on the host
+      - 127.0.0.1:${GATEWAY_PORT:-8080}:8080
+
+  # Episode 3. Serves the tool server's tools through your zrok share, and listens on no port.
+  mcp-gateway:
+    image: ziti-tv-10-16/runtime
+    depends_on:
+      llm-gateway:
+        condition: service_started
+      router:
+        condition: service_healthy
+    # mcp-gateway does not expand variables in its config, so the share name goes in here
+    command:
+      - sh
+      - -c
+      - >-
+        sed "s/ziti-tv-appetizer/$${SHARE}/" /stack/ep3-mcp-gateway/mcp-gateway.yml > /tmp/mcp-gateway.yml
+        && exec mcp-gateway run /tmp/mcp-gateway.yml
+    environment:
+      - SHARE=${SHARE:?set SHARE in .env}
+    volumes:
+      - ./:/stack:ro
+      - ./.ziti:/ziti:ro
+      - ${ZROK2_DIR:-${HOME}/.zrok2}:/root/.zrok2
+
+  # Episode 3. Holds one key, which LLM Gateway accepts on the tools route alone, and hosts agent-service.
+  # AGENT_PY=/episode4/agent/agent.py runs episode 4's agent instead.
+  agent:
+    image: ziti-tv-10-16/runtime
+    depends_on:
+      llm-gateway:
+        condition: service_healthy
+      mcp-gateway:
+        condition: service_started
+    command: ["sh", "-c", "exec python \"$${AGENT_PY}\""]
+    # the first start can beat MCP Gateway to the share
+    restart: on-failure
+    environment:
+      - AGENT_PY=${AGENT_PY:-/stack/ep3-mcp-gateway/agent/agent.py}
+      - AGENT_GATEWAY_KEY=${AGENT_GATEWAY_KEY:?set AGENT_GATEWAY_KEY in .env}
+      - LLM_GATEWAY=llm-gateway:8080
+      - ZITI_IDENTITY=/ziti/agent.json
+      - MCP_COMMAND=mcp-tools run ${SHARE:?set SHARE in .env}
+    volumes:
+      - ./:/stack:ro
+      - ./.ziti:/ziti:ro
+      - ../files:/episode4:ro
+      - ${ZROK2_DIR:-${HOME}/.zrok2}:/root/.zrok2
+
+  # Episode 4. Each host puts one person's tool on the network as that person's identity. Neither starts until you
+  # ask for it: `docker compose up -d ziggy-host`.
+  ziggy-host:
+    image: ziti-tv-10-16/runtime
+    profiles: [ep4]
+    hostname: ziggy-laptop
+    command: >-
+      python /episode4/byo/host.py /ziti-demo/local_ziggy.json --
+      python /episode4/byo/tools/whereami.py
+    volumes:
+      - ../files:/episode4:ro
+      - ${ZITI_DEMO_DIR:-${HOME}/.ziti-demo}:/ziti-demo:ro
+
+  mallory-host:
+    image: ziti-tv-10-16/runtime
+    profiles: [ep4]
+    hostname: mallory-laptop
+    command: >-
+      python /episode4/byo/host.py /ziti-demo/local_mallory.json --
+      python /episode4/byo/tools/mallory.py
+    volumes:
+      - ../files:/episode4:ro
+      - ${ZITI_DEMO_DIR:-${HOME}/.ziti-demo}:/ziti-demo:ro
+
+  # Episode 1's client: type a line, and the Appetizer's reflect server sends it back with its verdict.
+  #   docker compose run --rm reflect                                           # as Ziggy
+  reflect:
+    image: ziti-tv-10-16/runtime
+    profiles: [client]
+    stdin_open: true
+    tty: true
+    command: ["python", "/episode4/byo/dial.py", "local_reflectService"]
+    environment:
+      - ZITI_IDENTITY=/ziti-demo/local_ziggy.json
+    volumes:
+      - ../files:/episode4:ro
+      - ${ZITI_DEMO_DIR:-${HOME}/.ziti-demo}:/ziti-demo:ro
+
+  # A client for talking to the agent as one identity:
+  #   docker compose run --rm dial                                              # as Ziggy
+  #   docker compose run --rm -e ZITI_IDENTITY=/ziti-demo/local_mallory.json dial
+  dial:
+    image: ziti-tv-10-16/runtime
+    profiles: [client]
+    stdin_open: true
+    tty: true
+    command: ["python", "/episode4/byo/dial.py", "agent-service"]
+    environment:
+      - ZITI_IDENTITY=/ziti-demo/local_ziggy.json
+      - ZITI_LOG=1
+    volumes:
+      - ../files:/episode4:ro
+      - ${ZITI_DEMO_DIR:-${HOME}/.ziti-demo}:/ziti-demo:ro
+
+volumes:
+  ollama:

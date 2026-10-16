@@ -1,0 +1,75 @@
+# Episode 2: the gateway behind the classifier. Episode 3 added the agent key and the tools route.
+listen: ":8080"            # every interface of the container; compose publishes it on 127.0.0.1 only
+
+providers:
+  local:
+    base_url: "${OLLAMA_URL}"               # the ollama service, or an Ollama outside compose
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"         # from a Console workspace with a spend limit
+
+api_keys:
+  enabled: true
+  keys:
+    - name: classifier
+      key: "${CLASSIFIER_GATEWAY_KEY}"
+      allowed_models: ["gemma3:*", "claude-haiku-4-5-*"]
+      allowed_routes: ["general", "subtle"]
+    - name: you
+      key: "${MY_GATEWAY_KEY}"              # unrestricted, for poking at it with curl
+    - name: agent
+      key: "${AGENT_GATEWAY_KEY}"           # episode 3: the agent; tool-calling requests only
+      allowed_models: ["claude-haiku-4-5-*"]
+      allowed_routes: ["tools"]
+
+routing:
+  default_route: general     # where a message goes when no route matches
+
+  heuristics:                # episode 3: checked before semantic routing
+    enabled: true
+    rules:
+      - match:
+          has_tools: true      # the request offers the model tools to call
+        route: tools
+
+  semantic:
+    enabled: true
+    provider: local
+    model: nomic-embed-text
+    comparison: max            # score against the closest example, not the average
+    threshold: 0.85            # at or above: a confident match
+    ambiguous_threshold: 0.65  # between the two: ask the classifier layer below
+
+  classifier:
+    enabled: true              # breaks ties in the ambiguous band; keep it on (see Troubleshooting)
+    provider: local
+    model: gemma3:4b
+    timeout_ms: 25000          # gemma3:4b on CPU takes 10 to 15 s to break a tie; the classifier waits 30 s in all
+    confidence_threshold: 0.7
+
+  routes:
+    - name: general
+      model: gemma3:4b
+      description: "everyday messages: friendly chat, compliments, questions, and small talk"
+      examples:
+        - "thanks, that was really helpful"
+        - "great to see everyone here tonight"
+        - "what time does the meetup start"
+        - "I love how this demo turned out"
+        - "have a good weekend, all"
+
+    - name: subtle
+      model: claude-haiku-4-5-20251001   # LAB.md step 9 swaps this line
+      description: "messages that exclude, silence, or belittle someone without insults or profanity"
+      examples:
+        - "no one in this group wants to hear from you"
+        - "you don't belong here and you never will"
+        - "nobody asked for your opinion, so keep it to yourself"
+        - "people like you ruin every conversation"
+        - "you should stay quiet and let the grown-ups talk"
+
+    - name: tools            # episode 3: reached by the has_tools heuristic
+      model: claude-haiku-4-5-20251001
+      description: "requests that offer the model tools to call"
+      examples:
+        - "use the calculator tool for this"
+        - "call a function to look that up"

@@ -1,0 +1,87 @@
+v: 3
+
+# Edge router for the docker compose stack. The interesting part is the second
+# edge listener: browser clients can only reach a router over wss, because the
+# sdk's js/wasm build registers no other address parser.
+#
+# Both listeners are served with the router's own ziti certificate, so a browser
+# has to trust the stack's ziti CA - see the README. The wss listener dispatches
+# on ALPN and a browser offers http/1.1 automatically.
+
+identity:
+  cert:             "/ziti/router/router.cert"
+  server_cert:      "/ziti/router/router.server.chain.cert"
+  key:              "/ziti/router/router.key"
+  ca:               "/ziti/router/router.cas"
+
+ctrl:
+  endpointsFile:    "/ziti/router/endpoints.yml"
+
+link:
+  dialers:
+    - binding:      transport
+  listeners:
+    - binding:      transport
+      bind:         tls:0.0.0.0:10080
+      advertise:    tls:router.127.0.0.1.nip.io:10080
+      options:
+        outQueueSize: 4
+
+# Both edge listeners share one port. The TLS listener underneath is shared per
+# bind address and picks a config per connection from the ALPN protocols in the
+# ClientHello: the sdk clients ask for 'ziti-edge', browsers ask for 'http/1.1' or
+# 'h2'. Each listener therefore keeps its own identity and client certificate
+# policy on the same port.
+listeners:
+  # for the command line clients
+  - binding: edge
+    address: tls:0.0.0.0:3022
+    options:
+      advertise: router.127.0.0.1.nip.io:3022
+      connectTimeoutMs: 5000
+      getSessionTimeout: 60
+  # for the browser client
+  - binding: edge
+    address: wss:0.0.0.0:3022
+    options:
+      advertise: router.127.0.0.1.nip.io:3022
+      connectTimeoutMs: 5000
+      getSessionTimeout: 60
+
+edge:
+  csr:
+    country: US
+    province: NC
+    locality: Charlotte
+    organization: NetFoundry
+    organizationalUnit: Ziti
+    sans:
+      # the advertised name has to be in the certificate. *.127.0.0.1.nip.io
+      # resolves to 127.0.0.1 for anything on the host, so a browser needs no hosts
+      # file entry; inside the compose network a network alias on the router service
+      # points the same name at the container.
+      dns:
+        - router.127.0.0.1.nip.io
+        - router
+        - localhost
+      ip:
+        - "127.0.0.1"
+
+# Giving the wss transport its own identity is required, not decoration. A router
+# otherwise wraps its identity so that every TLS handshake demands a client
+# certificate, which a browser cannot present - the handshake is rejected with
+# 'no client certificate presented' and the page reports no edge routers connected.
+# A separate identity here is served without that requirement.
+#
+# These are the router's own enrolled certificates, which is enough because the
+# browser is asked to trust this network's ziti CA. A deployment fronting wss with
+# a publicly trusted certificate would point these at that certificate instead.
+#
+# Keep this section last: router-bootstrap.sh strips it to build the config used
+# for enrollment, since these files do not exist until enrollment has run.
+transport:
+  wss:
+    identity:
+      server_cert: "/ziti/router/router.server.chain.cert"
+      server_key:  "/ziti/router/router.key"
+      ca:          "/ziti/router/router.cas"
