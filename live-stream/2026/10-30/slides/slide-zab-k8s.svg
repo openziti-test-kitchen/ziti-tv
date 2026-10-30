@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B1B2E"/>
+      <stop offset="55%" stop-color="#071322"/>
+      <stop offset="100%" stop-color="#040B14"/>
+    </linearGradient>
+
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00E3B0"/>
+      <stop offset="100%" stop-color="#28C2FF"/>
+    </linearGradient>
+
+    <linearGradient id="cardFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#12293F" stop-opacity="0.97"/>
+      <stop offset="100%" stop-color="#0A1A2B" stop-opacity="0.97"/>
+    </linearGradient>
+
+    <linearGradient id="shellFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0D2135" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#081625" stop-opacity="0.7"/>
+    </linearGradient>
+
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00E3B0" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00E3B0" stop-opacity="0"/>
+    </radialGradient>
+
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M60 0H0V60" fill="none" stroke="#1B3B5A" stroke-width="1" stroke-opacity="0.32"/>
+    </pattern>
+
+    <filter id="lift" x="-30%" y="-30%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#020609" flood-opacity="0.7"/>
+    </filter>
+
+    <marker id="arrowGrey" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M1 1 L11 6 L1 11 z" fill="#6E93B0"/>
+    </marker>
+    <marker id="arrowTeal" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M1 1 L11 6 L1 11 z" fill="#00E3B0"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+  <ellipse cx="1000" cy="640" rx="640" ry="440" fill="url(#glow)"/>
+  <ellipse cx="220" cy="1000" rx="520" ry="360" fill="url(#glow)" opacity="0.5"/>
+
+  <!-- title -->
+  <text x="100" y="118" fill="#7FA6C4" font-size="28" font-weight="600" letter-spacing="7">OPENZITI · ACCESS BRIDGE (ZAB) · KUBERNETES</text>
+  <text x="96" y="220" fill="#F2F8FF" font-size="76" font-weight="800" letter-spacing="-2">Two replicas, <tspan fill="url(#accent)">nothing listening</tspan></text>
+  <rect x="100" y="252" width="120" height="8" rx="4" fill="url(#accent)"/>
+
+  <!-- ================= people ================= -->
+  <g filter="url(#lift)">
+    <rect x="96" y="440" width="200" height="200" rx="18" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="120" y="490" fill="#7FA6C4" font-size="22" font-weight="700" letter-spacing="4">PEOPLE</text>
+  <circle cx="132" cy="536" r="10" fill="#00E3B0"/>
+  <text x="154" y="545" fill="#F2F8FF" font-size="28" font-weight="700">you</text>
+  <circle cx="132" cy="590" r="10" fill="#3E5F7A"/>
+  <text x="154" y="599" fill="#F2F8FF" font-size="28" font-weight="700">them</text>
+
+  <!-- ================= cloudflare ================= -->
+  <rect x="356" y="330" width="290" height="560" rx="30" fill="url(#shellFill)" stroke="#25506F" stroke-width="2"/>
+  <text x="380" y="380" fill="#7FA6C4" font-size="25" font-weight="700" letter-spacing="5">CLOUDFLARE</text>
+
+  <g filter="url(#lift)">
+    <rect x="380" y="406" width="242" height="170" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="404" y="454" fill="#F2F8FF" font-size="32" font-weight="700">Access</text>
+  <text x="404" y="494" fill="#9FBDD4" font-size="21">sign-in + policy</text>
+  <text x="404" y="540" fill="#28C2FF" font-size="19" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">k8s.&lt;zone&gt;</text>
+
+  <g filter="url(#lift)">
+    <rect x="380" y="610" width="242" height="250" rx="20" fill="url(#cardFill)" stroke="#00E3B0" stroke-width="2.5"/>
+  </g>
+  <text x="404" y="658" fill="#F2F8FF" font-size="32" font-weight="700">Tunnel</text>
+  <text x="404" y="698" fill="#28C2FF" font-size="20" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">zab-k8s</text>
+  <text x="404" y="744" fill="#9FBDD4" font-size="21">one tunnel,</text>
+  <text x="404" y="774" fill="#9FBDD4" font-size="21">two connectors</text>
+  <text x="404" y="828" fill="#00E3B0" font-size="20" font-weight="600">routes to a live one</text>
+
+  <!-- ================= cluster ================= -->
+  <rect x="720" y="300" width="1104" height="600" rx="30" fill="url(#shellFill)" stroke="#25506F" stroke-width="2"/>
+  <text x="746" y="350" fill="#7FA6C4" font-size="25" font-weight="700" letter-spacing="5">KUBERNETES</text>
+  <text x="996" y="350" fill="#5E819C" font-size="22" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">ns zab-demo</text>
+
+  <!-- inbound: none -->
+  <text x="1270" y="350" fill="#FFC64D" font-size="21" font-weight="700" letter-spacing="2" text-anchor="end">INBOUND</text>
+  <g font-size="20" font-weight="600">
+    <rect x="1290" y="322" width="114" height="40" rx="20" fill="#173A57"/>
+    <text x="1347" y="349" fill="#6E93B0" text-anchor="middle">Ingress</text>
+    <line x1="1310" y1="342" x2="1384" y2="342" stroke="#FF6B6B" stroke-width="3"/>
+    <rect x="1414" y="322" width="174" height="40" rx="20" fill="#173A57"/>
+    <text x="1501" y="349" fill="#6E93B0" text-anchor="middle">LoadBalancer</text>
+    <line x1="1440" y1="342" x2="1562" y2="342" stroke="#FF6B6B" stroke-width="3"/>
+    <rect x="1598" y="322" width="132" height="40" rx="20" fill="#173A57"/>
+    <text x="1664" y="349" fill="#6E93B0" text-anchor="middle">NodePort</text>
+    <line x1="1624" y1="342" x2="1704" y2="342" stroke="#FF6B6B" stroke-width="3"/>
+  </g>
+  <text x="1798" y="350" fill="#FFC64D" font-size="21" font-weight="700" text-anchor="end">none</text>
+
+  <!-- zab deployment -->
+  <rect x="746" y="400" width="370" height="470" rx="24" fill="none" stroke="#2C5F84" stroke-width="2" stroke-dasharray="8 8"/>
+  <text x="770" y="440" fill="#7FA6C4" font-size="21" font-weight="700" letter-spacing="3">DEPLOYMENT zab</text>
+  <text x="770" y="468" fill="#5E819C" font-size="19" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">replicas: 2</text>
+
+  <g filter="url(#lift)">
+    <rect x="770" y="490" width="322" height="160" rx="20" fill="url(#cardFill)" stroke="#00E3B0" stroke-width="2.5"/>
+    <rect x="770" y="680" width="322" height="160" rx="20" fill="url(#cardFill)" stroke="#00E3B0" stroke-width="2.5"/>
+  </g>
+  <path d="M770 514a24 24 0 0 1 24-24h274a24 24 0 0 1 24 24v26H770z" fill="#143352"/>
+  <circle cx="800" cy="516" r="7" fill="#FF6B6B"/>
+  <circle cx="822" cy="516" r="7" fill="#FFC64D"/>
+  <circle cx="844" cy="516" r="7" fill="#00E3B0"/>
+  <text x="866" y="523" fill="#7FA6C4" font-size="19" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">zab pod 1</text>
+  <text x="794" y="582" fill="#F2F8FF" font-size="22" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">zab run</text>
+  <text x="794" y="622" fill="#5E819C" font-size="19">tunnel out · verify · dial as you</text>
+
+  <path d="M770 704a24 24 0 0 1 24-24h274a24 24 0 0 1 24 24v26H770z" fill="#143352"/>
+  <circle cx="800" cy="706" r="7" fill="#FF6B6B"/>
+  <circle cx="822" cy="706" r="7" fill="#FFC64D"/>
+  <circle cx="844" cy="706" r="7" fill="#00E3B0"/>
+  <text x="866" y="713" fill="#7FA6C4" font-size="19" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">zab pod 2</text>
+  <text x="794" y="772" fill="#F2F8FF" font-size="22" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">zab run</text>
+  <text x="794" y="812" fill="#5E819C" font-size="19">same tunnel token</text>
+
+  <!-- router -->
+  <g filter="url(#lift)">
+    <rect x="1186" y="520" width="270" height="190" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="1210" y="568" fill="#F2F8FF" font-size="30" font-weight="700">OpenZiti</text>
+  <text x="1210" y="604" fill="#F2F8FF" font-size="30" font-weight="700">router</text>
+  <text x="1210" y="646" fill="#28C2FF" font-size="19" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">tunnel mode: host</text>
+  <text x="1210" y="682" fill="#6E93B0" font-size="19">dials by cluster DNS</text>
+
+  <!-- controller -->
+  <g filter="url(#lift)">
+    <rect x="1186" y="740" width="270" height="130" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="1210" y="786" fill="#F2F8FF" font-size="26" font-weight="700">Controller</text>
+  <text x="1210" y="822" fill="#5E819C" font-size="18" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">ext-jwt-signer</text>
+  <text x="1210" y="850" fill="#5E819C" font-size="18" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">Dial policy per person</text>
+
+  <!-- apps -->
+  <g filter="url(#lift)">
+    <rect x="1530" y="420" width="270" height="170" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+    <rect x="1530" y="620" width="270" height="170" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="1554" y="466" fill="#F2F8FF" font-size="24" font-weight="700" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">demo-http-server</text>
+  <text x="1554" y="504" fill="#A8C6DC" font-size="20" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">:8080</text>
+  <g font-size="19" font-weight="600">
+    <rect x="1554" y="526" width="124" height="38" rx="19" fill="#0E3D33" stroke="#1C6B5A"/>
+    <text x="1616" y="551" fill="#8FE8D5" text-anchor="middle">ClusterIP</text>
+  </g>
+  <text x="1554" y="666" fill="#F2F8FF" font-size="24" font-weight="700" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">whoami</text>
+  <text x="1554" y="704" fill="#A8C6DC" font-size="20" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">:80 · /whoami</text>
+  <g font-size="19" font-weight="600">
+    <rect x="1554" y="726" width="124" height="38" rx="19" fill="#0E3D33" stroke="#1C6B5A"/>
+    <text x="1616" y="751" fill="#8FE8D5" text-anchor="middle">ClusterIP</text>
+  </g>
+
+  <!-- ================= flows ================= -->
+  <path d="M296 520 C330 520 340 492 374 492" fill="none" stroke="#6E93B0" stroke-width="4" stroke-dasharray="12 10" marker-end="url(#arrowGrey)"/>
+  <text x="326" y="462" fill="#8FB0C8" font-size="20" font-weight="600" text-anchor="middle">sign</text>
+  <text x="326" y="484" fill="#8FB0C8" font-size="20" font-weight="600" text-anchor="middle">in</text>
+
+  <!-- pods dial out to the tunnel -->
+  <path d="M770 570 C700 570 690 700 628 700" fill="none" stroke="#00E3B0" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <path d="M770 760 C700 760 690 780 628 780" fill="none" stroke="#00E3B0" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <text x="746" y="944" fill="#00E3B0" font-size="22" font-weight="600">both pods dial out to Cloudflare</text>
+
+  <!-- zab to router, as the person -->
+  <path d="M1092 570 C1130 570 1150 600 1180 600" fill="none" stroke="#00E3B0" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <path d="M1092 760 C1130 760 1150 650 1180 650" fill="none" stroke="#00E3B0" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <text x="1112" y="510" fill="#00E3B0" font-size="20" font-weight="600">as you</text>
+
+  <!-- router to apps -->
+  <path d="M1456 580 C1490 580 1494 506 1524 506" fill="none" stroke="#6E93B0" stroke-width="4" stroke-dasharray="12 10" marker-end="url(#arrowGrey)"/>
+  <path d="M1456 660 C1490 660 1494 704 1524 704" fill="none" stroke="#6E93B0" stroke-width="4" stroke-dasharray="12 10" marker-end="url(#arrowGrey)"/>
+
+  <!-- caption -->
+  <text x="96" y="1006" fill="#9FBDD4" font-size="30" font-weight="500">No inbound path to open. Delete a pod and <tspan fill="#00E3B0">the other keeps serving</tspan>.</text>
+
+  <text x="1800" y="1046" text-anchor="end" fill="#4E7391" font-size="28" font-weight="700" letter-spacing="4">OPENZITI</text>
+</svg>

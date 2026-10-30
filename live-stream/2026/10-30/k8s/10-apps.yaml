@@ -1,0 +1,91 @@
+# The two apps ZAB reaches. ClusterIP only: nothing here is reachable from outside the cluster.
+# ziti-router-1 (tunnel mode: host) binds the k8s-demo and k8s-whoami services and dials these
+# Services by cluster DNS.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-http-server
+  namespace: zab-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-http-server
+  template:
+    metadata:
+      labels:
+        app: demo-http-server
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: demo-http-server
+          image: zab.local/demo-http-server:dev
+          imagePullPolicy: Never
+          args:
+            - --interface=0.0.0.0
+            - --port=8080
+            - --cloudflare-team-domain=itsstillyou.cloudflareaccess.com
+            - --cloudflare-aud=470e467a6e4d5f22a3dcb19a16c192ac4ee67969d2d409165186a6c75ee9ef8a
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-http-server
+  namespace: zab-demo
+spec:
+  type: ClusterIP
+  selector:
+    app: demo-http-server
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+  namespace: zab-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: whoami
+    spec:
+      containers:
+        - name: whoami
+          image: traefik/whoami:v1.11
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+  namespace: zab-demo
+spec:
+  type: ClusterIP
+  selector:
+    app: whoami
+  ports:
+    - port: 80
+      targetPort: 80

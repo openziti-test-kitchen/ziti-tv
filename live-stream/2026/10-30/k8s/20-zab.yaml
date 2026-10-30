@@ -1,0 +1,124 @@
+# ZAB in Kubernetes. No Ingress, no LoadBalancer, no NodePort: the embedded Cloudflare Tunnel dials
+# out, and both replicas connect to the same named tunnel, so killing one pod keeps the page up.
+#
+# Secrets this needs, created by hand (see README.md):
+#   zab-identity          zab.key, zab.cert, zab.ca, endpoints.yml  (from `zab enroll`)
+#   zab-cloudflare-tunnel token                                     (Cloudflare tunnel token)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zab-config
+  namespace: zab-demo
+data:
+  config.yml: |
+    identity:
+      key: /etc/zab/id/zab.key
+      cert: /etc/zab/id/zab.cert
+      ca: /etc/zab/id/zab.ca
+    # ZAB rewrites this file as controllers come and go, so it lives on the emptyDir.
+    endpointFile: /var/run/zab/endpoints.yml
+    socketFile: /var/run/zab/zab.sock
+    cloudflare:
+      # MORNING: the real team domain and the Access application's AUD tag.
+      teamDomain: CHANGE-ME.cloudflareaccess.com
+      audTags:
+        - CHANGE-ME
+      # tunnelTokenFile is unset: the token comes from ZAB_CLOUDFLARE_TUNNEL_TOKEN.
+    identityClaim: email
+    pool:
+      idleWindow: 30m
+      grace: 5m
+    dialTimeout: 10s
+    metrics:
+      address: 0.0.0.0:9090
+    logLevel: info
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zab
+  namespace: zab-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: zab
+  template:
+    metadata:
+      labels:
+        app: zab
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      initContainers:
+        # Seed the writable endpoint file from the enrollment copy in the Secret.
+        - name: seed-endpoints
+          image: busybox:1.37
+          command: ["sh", "-c", "cp /etc/zab/id/endpoints.yml /var/run/zab/endpoints.yml"]
+          volumeMounts:
+            - name: identity
+              mountPath: /etc/zab/id
+              readOnly: true
+            - name: run
+              mountPath: /var/run/zab
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+      containers:
+        - name: zab
+          image: zab.local/zab:dev
+          imagePullPolicy: Never
+          args: ["--config", "/etc/zab/config.yml", "run"]
+          env:
+            # The root filesystem is read-only; give the embedded cloudflared a writable home.
+            - name: HOME
+              value: /tmp
+            - name: ZAB_CLOUDFLARE_TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: zab-cloudflare-tunnel
+                  key: token
+          ports:
+            - name: metrics
+              containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+          volumeMounts:
+            - name: config
+              mountPath: /etc/zab/config.yml
+              subPath: config.yml
+              readOnly: true
+            - name: identity
+              mountPath: /etc/zab/id
+              readOnly: true
+            - name: run
+              mountPath: /var/run/zab
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: zab-config
+        - name: identity
+          secret:
+            secretName: zab-identity
+            defaultMode: 0440
+        - name: run
+          emptyDir: {}
