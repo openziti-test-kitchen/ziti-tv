@@ -88,19 +88,22 @@ chmod +x "$DEMO_DIR/bin/ziti" "$DEMO_DIR/bin/ziti-edge-tunnel"
   --router-address "addbyurl-router.$DOMAIN" --router-port "$ROUTER_PORT"
 ```
 
-## 4. Three changes put the public certificate on the client API
+## 4. One change puts the public certificate on the client API
 
-[patch-ctrl.sh](patch-ctrl.sh) makes them and prints the diff:
+[patch-ctrl.sh](patch-ctrl.sh) adds the Let's Encrypt certificate with `alt_server_certs` and prints the diff. During
+the TLS handshake the client sends the name it wants (SNI). The controller picks the first certificate whose DNS names
+match. A request for `addbyurl.$DOMAIN` matches only the Let's Encrypt certificate. If the private certificate also
+listed `addbyurl.$DOMAIN`, clients would get the private one. That is why the quickstart used a different name,
+`addbyurl-ctrl`.
 
-1. **`edge.api.address` and the web bindPoint `address` become `addbyurl.$DOMAIN`.** During the TLS handshake the
-   client sends the name it wants (SNI). The controller picks the first certificate whose DNS names match. If the
-   private certificate also listed `addbyurl.$DOMAIN`, clients would get the private one. That is why the
-   quickstart used a different name, `addbyurl-ctrl`.
-2. **`alt_server_certs` adds the Let's Encrypt certificate.**
-3. **The web listener's `ca` becomes the private root plus ISRG Root X1 and X2.** The controller serves this bundle
-   at `/.well-known/est/cacerts`, and a client that enrolled with a JWT trusts that bundle and nothing else. Without
-   the Let's Encrypt roots in it, the controller's own JWTs break as soon as it presents the Let's Encrypt
-   certificate.
+Everything else stays as the quickstart wrote it. The controller keeps advertising `addbyurl-ctrl.$DOMAIN`, and the
+web listener's `ca` keeps only the private root.
+
+> [!CAUTION]
+> **Never add a public root to the `ca` bundle.** The controller serves the web listener's `ca` bundle at
+> `/.well-known/est/cacerts`, and every enrolled client trusts that bundle and nothing else. A public root, such as the
+> Let's Encrypt ISRG roots, in that bundle makes every enrolled client trust any certificate that CA issues for your
+> controller's name.
 
 **[ubuntu]**
 
@@ -311,10 +314,6 @@ In Ziti Desktop Edge, **Forget** each identity.
 certificate. It picks the first certificate whose DNS names match the name the client asked for, so if the private
 certificate also lists `addbyurl.$DOMAIN`, the private one wins. Keep the quickstart's `--ctrl-address` a different
 name, as in step 3.
-
-**JWT enrollment fails with `CONTROLLER_UNAVAILABLE` after the switch to Let's Encrypt.** The token checks out, then
-the next request fails: the client trusts only the controller's CA bundle, and the bundle has no Let's Encrypt root.
-Run `patch-ctrl.sh` again, check that `web-ca-bundle.pem` holds three certificates, and restart the controller.
 
 **Add by URL against `addbyurl-ctrl.$DOMAIN` fails with `CONTROLLER_UNAVAILABLE`.** That name has only the private
 certificate, which the operating system does not trust. That is the refusal working as intended. Use

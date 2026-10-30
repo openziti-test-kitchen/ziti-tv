@@ -59,7 +59,7 @@ set -a; source .env; set +a
 
 ## 0. Opening: the payoff
 
-- Say: join with a URL and your company login, no JWT in an email
+- join with a URL and your company login, no JWT in an email
 - Show the join diagram: <file:///D:/tmp/ziti-tv-script/diagrams.html>
 - **[sg4]** ZDEW → **ADD IDENTITY** → **With URL** → payoff URL, port **9580**:
 
@@ -74,14 +74,14 @@ https://addbyurl.zititv.demo.openziti.org:9580
 curl.exe -s http://eng-wiki.acme.ziti
 ```
 
-- Say: that's the payoff, now we build it from nothing
+- Payoff overlay was built before the show in `~/payoff` (ports 9580/9590/9780); the live one is empty
 - **[sg4]** ZDEW → **Forget** dave. Browser → sign out:
 
 ```text
 https://addbyurl-idp.zititv.demo.openziti.org:9780/realms/acme/account
 ```
 
-- Say: Acme, Keycloak, alice = engineering, bob = finance, carol = nothing
+- Acme, Keycloak, alice = engineering, bob = finance, carol = nothing
 
 ## 1. Files
 
@@ -93,7 +93,7 @@ ls
 mkdir -p "$DEMO_DIR/bin"
 ```
 
-- Say: all in the ziti-tv repo, copy `default.env` to `.env`
+- Done: episode files copied to `~/ziti-tv-10-23`, `.env` made from `default.env` (domain, two passwords, ports)
 
 ## 2. Certificate
 
@@ -105,8 +105,8 @@ ls -la "$DEMO_DIR/le"
 openssl x509 -in "$DEMO_DIR/le/fullchain.pem" -noout -subject -enddate
 ```
 
-- Say: baked ahead with certbot
-- Say: a JWT carries its trust, a URL needs the OS to trust it
+- Done before the show: wildcard `*.zititv.demo.openziti.org` from Let's Encrypt (certbot, DNS-01), valid until Dec 2, copied to `$DEMO_DIR/le`
+- Why: a JWT carries its own trust; a URL only works if the OS already trusts the cert
 - Show README step 2 DNS table, `addbyurl` is the only name users type
 
 ## 3. Download, quickstart
@@ -135,7 +135,7 @@ chmod +x "$DEMO_DIR/bin/ziti" "$DEMO_DIR/bin/ziti-edge-tunnel"
 
 ## 4. Patch, start
 
-- README: [step 4](https://github.com/openziti-test-kitchen/ziti-tv/blob/main/live-stream/2026/10-23/README.md#4-three-changes-put-the-public-certificate-on-the-client-api)
+- README: [step 4](https://github.com/openziti-test-kitchen/ziti-tv/blob/main/live-stream/2026/10-23/README.md#4-one-change-puts-the-public-certificate-on-the-client-api)
 - **[cdaws]**
 
 ```bash
@@ -143,9 +143,9 @@ bash patch-ctrl.sh
 ```
 
 - Walk the diff:
-  - client API address → `addbyurl` (cert picked by SNI)
-  - `alt_server_certs` → Let's Encrypt cert
-  - CA bundle + ISRG Root X1/X2 → JWT enrollments keep working
+  - `alt_server_certs` → Let's Encrypt cert (picked by SNI for `addbyurl`)
+  - client API address stays `addbyurl-ctrl`
+  - CA bundle untouched: never add a public root to it
 - **[cdaws]**
 
 ```bash
@@ -160,7 +160,7 @@ nohup $A/bin/ziti router run $A/qs/instance-1/router-instance-1.yaml > $A/router
 curl.exe -s https://addbyurl.zititv.demo.openziti.org:9480/edge/client/v1/version
 ```
 
-- Say: no `-k`, no prompt, the OS trusts it
+- Result: no `-k`, no cert prompt, the OS trusts the URL
 
 ## 5. Keycloak
 
@@ -187,9 +187,9 @@ docker logs -f kc-acme
 bash keycloak-acme.sh
 ```
 
-- Say: two groups, users, watch carol
-- Say: Audience mapper → `openziti` in the token
-- Say: `groups` mapper, full path off → `engineering` not `/engineering`
+- two groups, users, watch carol
+- Audience mapper → `openziti` in the token
+- `groups` mapper, full path off → `engineering` not `/engineering`
 - Optional, **[sg4]** browser, Keycloak `admin`:
 
 ```text
@@ -214,7 +214,7 @@ bash ziti-setup.sh
   - `--enroll-to-token --enroll-to-cert` → anyone who signs in can enroll
   - `--enroll-name-claims-selector preferred_username` → identity named after the user
   - `--enroll-attr-claims-selector groups` → groups become attributes
-- Say: policies say `#engineering`, `#finance`, nobody has them yet
+- policies say `#engineering`, `#finance`, nobody has them yet
 - **[cdaws]**
 
 ```bash
@@ -226,8 +226,8 @@ nohup $A/bin/ziti-edge-tunnel run-host -i $A/host-ids/acme-host.json > $A/host.l
 "$DEMO_DIR/bin/ziti" edge list identities
 ```
 
-- Say: `acme-host` used a plain JWT, JWTs still work
-- Say: only `acme-host` and admin, no alice, no bob
+- `acme-host` used a plain JWT, JWTs still work
+- only `acme-host` and admin, no alice, no bob
 
 ## 7. alice, user session
 
@@ -253,8 +253,8 @@ curl.exe -s -m 5 http://finance-ledger.acme.ziti
 "$DEMO_DIR/bin/ziti" edge policy-advisor identities -q alice
 ```
 
-- Say: nobody ran `create identity`
-- Say: no key on the laptop, disable alice in Keycloak and she's out
+- nobody ran `create identity`
+- no key on the laptop, disable alice in Keycloak and she's out
 
 ## 8. bob, device certificate
 
@@ -278,9 +278,9 @@ curl.exe -s http://finance-ledger.acme.ziti
 "$DEMO_DIR/bin/ziti" edge policy-advisor identities -q bob
 ```
 
-- Say: key on the device, works with Keycloak down
-- Say: disabling bob in Keycloak does not stop him, disable in OpenZiti
-- Say: one device cert per user, **Forget** doesn't remove it from the controller
+- key on the device, works with Keycloak down
+- disabling bob in Keycloak does not stop him, disable in OpenZiti
+- one device cert per user, **Forget** doesn't remove it from the controller
 - Optional **[cdaws]**:
 
 ```bash
@@ -308,19 +308,19 @@ curl -s http://eng-wiki.acme.ziti
 "$DEMO_DIR/bin/ziti" edge list identities
 ```
 
-- Say: second machine, still one alice
+- second machine, still one alice
 
 ## 9. Groups copied once
 
 - README: [step 9](https://github.com/openziti-test-kitchen/ziti-tv/blob/main/live-stream/2026/10-23/README.md#9-groups-are-copied-once)
-- Say: groups read at creation only, then an admin owns attributes
+- groups read at creation only, then an admin owns attributes
 - Optional: Keycloak console → add alice to `finance` → **[cdaws]**
 
 ```bash
 "$DEMO_DIR/bin/ziti" edge list identities
 ```
 
-- Say: alice still says engineering
+- alice still says engineering
 
 ## 10. carol, command line
 
@@ -353,15 +353,15 @@ $ctrl = 'https://addbyurl.zititv.demo.openziti.org:9480'
 "$DEMO_DIR/bin/ziti" edge list identities
 ```
 
-- Say: `-m token` = user session, `-m cert` = device cert
-- Say: first login needs `-p <signer>`, same on Linux with `sudo`
-- Say: carol exists, no attributes, reaches nothing
+- `-m token` = user session, `-m cert` = device cert
+- first login needs `-p <signer>`, same on Linux with `sudo`
+- carol exists, no attributes, reaches nothing
 - Don't `curl` from SG4: alice's ZDEW answers those names
 
 ## Closing
 
-- Say: a URL and a sign-in, identity at first login, access from IdP groups
-- Say: user session for people, device cert for machines
+- a URL and a sign-in, identity at first login, access from IdP groups
+- user session for people, device cert for machines
 - Paste in chat: <https://github.com/openziti-test-kitchen/ziti-tv/tree/main/live-stream/2026/10-23>
 
 ---
