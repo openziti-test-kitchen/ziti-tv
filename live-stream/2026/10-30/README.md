@@ -26,7 +26,8 @@ You end up with:
 This assumes you have used OpenZiti and know what a service policy and an external JWT signer are. You need:
 
 - A Cloudflare account with a domain (a zone) on it, and Zero Trust enabled. The free plan covers this.
-- Three email addresses you can read, one per person. Cloudflare's One-time PIN login sends each a code.
+- Three email addresses you can read, one per person. Cloudflare's One-time PIN login sends each a code. The show
+  signed in through a Keycloak OIDC identity provider instead. Any Access login method works.
 - One machine with Go 1.27, Python 3, `git` and `curl`. Nothing on it accepts inbound connections.
 - For the Kubernetes part, a cluster you can reach with `kubectl` and an OpenZiti router running in it.
 

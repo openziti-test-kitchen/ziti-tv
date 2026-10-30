@@ -32,11 +32,11 @@ Ziti TV Oct 30 2026 - Your identity, past the tunnel
 YouTube description:
 
 ```text
-Same URL, three people, three different answers, and nothing on the server accepts a connection.
+Same URL, three people, three different answers, and the server opens no inbound port: the apps listen on 127.0.0.1 only.
 
-Cloudflare Access proves who you are at the front door, then the tunnel hands your request to a connector and your identity is gone. Ziti Access Bridge (ZAB) carries it the rest of the way: it runs the Cloudflare Tunnel, checks the Access JWT, and signs in to OpenZiti as you. OpenZiti service policy then decides what you reach.
+Cloudflare Access proves who you are at the front door, then the tunnel hands your request to a connector, and from there the network sees only the connector's IP. Ziti Access Bridge (ZAB) carries it the rest of the way: it runs the Cloudflare Tunnel, checks the Access JWT, and signs in to OpenZiti as you. OpenZiti service policy then decides what you reach.
 
-Today, with Andrew Martinez, we build it from nothing:
+Today, with Andrew Martinez, we walk through it end to end:
 - A Cloudflare Tunnel and Access app in front of two apps on 127.0.0.1
 - An OpenZiti external JWT signer that trusts Cloudflare's tokens
 - Three people who all pass Cloudflare and get three different answers
@@ -65,11 +65,11 @@ Live at 11 AM ET: https://youtube.com/live/ZSy4Gdl4tiM
 Reply to it:
 
 ```text
-What we build live:
+What we show live:
 - Cloudflare Tunnel + Access in front of two apps on 127.0.0.1
 - OpenZiti trusting Cloudflare's JWT
 - per-person access, revoked mid-session
-- the same thing in Kubernetes with zero inbound
+- the same thing in Kubernetes with no Ingress, LoadBalancer or NodePort
 ```
 
 ## 2. Bluesky
@@ -103,7 +103,7 @@ Cloudflare Access checks who you are, then Cloudflare Tunnel hands the request t
 
 Ziti Access Bridge (ZAB) is a small Go proof of concept that runs the tunnel itself, verifies the Access JWT, and signs in to an OpenZiti overlay with that same JWT, as that user. OpenZiti service policy then decides which apps each person reaches, and the apps listen on 127.0.0.1 only.
 
-On today's Ziti TV stream we set it up from scratch:
+On today's Ziti TV stream we walk through the whole setup:
 
 - a Cloudflare Tunnel and Access app, with Keycloak as the login
 - an OpenZiti quickstart with an external JWT signer for Cloudflare
@@ -129,14 +129,14 @@ Today at 11 AM ET on Ziti TV, Andrew Martinez and I sign in using Cloudflare Acc
 
 Live: https://youtube.com/live/ZSy4Gdl4tiM
 
-Normally Cloudflare Access proves who you are, then the tunnel hands your request to a connector, and the network behind it only sees the connector's IP. Ziti Access Bridge verifies the Access JWT and signs in to OpenZiti as you, so service policy, logs and metrics are per person, all the way to the app.
+Normally Cloudflare Access proves who you are, then the tunnel hands your request to a connector, and the network behind it only sees the connector's IP. Ziti Access Bridge verifies the Access JWT and signs in to OpenZiti as you, so OpenZiti service policy and ZAB's logs are per person, not per tunnel.
 
-What we build, live:
+What we show, live:
 
 - Cloudflare Tunnel and Access in front of two apps that listen on loopback only
 - OpenZiti trusting Cloudflare's JWT through an external JWT signer
 - revoking one person's access mid-session
-- the same bridge in Kubernetes with no inbound path at all
+- the same bridge in Kubernetes with no Ingress, LoadBalancer or NodePort
 
 Ziti Access Bridge: https://github.com/openziti-test-kitchen/ziti-access-bridge
 Scripts and walkthrough: https://github.com/openziti-test-kitchen/ziti-tv
@@ -164,7 +164,7 @@ Today at 11 AM ET on Ziti TV, we'll sign into Cloudflare Access, and use it to c
 
 [Ziti Access Bridge (ZAB)](https://github.com/openziti-test-kitchen/ziti-access-bridge) is a small Go proof of concept. It runs the Cloudflare Tunnel itself, verifies the Access JWT, and authenticates to OpenZiti with that same JWT through an [external JWT signer](https://openziti.io/docs/learn/core-concepts/security/authentication/external-jwt-signers), as that person. Service policy then decides which apps each person reaches, and the apps listen on 127.0.0.1 only.
 
-What we build, live:
+What we show, live:
 
 - a Cloudflare Tunnel and Access app, with Keycloak as the login
 - an OpenZiti quickstart with an external JWT signer for Cloudflare
