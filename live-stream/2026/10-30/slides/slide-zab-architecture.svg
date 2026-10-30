@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B1B2E"/>
+      <stop offset="55%" stop-color="#071322"/>
+      <stop offset="100%" stop-color="#040B14"/>
+    </linearGradient>
+
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00E3B0"/>
+      <stop offset="100%" stop-color="#28C2FF"/>
+    </linearGradient>
+
+    <linearGradient id="cardFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#12293F" stop-opacity="0.97"/>
+      <stop offset="100%" stop-color="#0A1A2B" stop-opacity="0.97"/>
+    </linearGradient>
+
+    <linearGradient id="shellFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0D2135" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#081625" stop-opacity="0.7"/>
+    </linearGradient>
+
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00E3B0" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00E3B0" stop-opacity="0"/>
+    </radialGradient>
+
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M60 0H0V60" fill="none" stroke="#1B3B5A" stroke-width="1" stroke-opacity="0.32"/>
+    </pattern>
+
+    <filter id="lift" x="-30%" y="-30%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#020609" flood-opacity="0.7"/>
+    </filter>
+
+    <marker id="arrowGrey" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M1 1 L11 6 L1 11 z" fill="#6E93B0"/>
+    </marker>
+    <marker id="arrowTeal" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M1 1 L11 6 L1 11 z" fill="#00E3B0"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+  <ellipse cx="1240" cy="610" rx="640" ry="460" fill="url(#glow)"/>
+  <ellipse cx="220" cy="1000" rx="520" ry="360" fill="url(#glow)" opacity="0.5"/>
+
+  <!-- title -->
+  <text x="100" y="118" fill="#7FA6C4" font-size="28" font-weight="600" letter-spacing="7">OPENZITI · ACCESS BRIDGE (ZAB)</text>
+  <text x="96" y="220" fill="#F2F8FF" font-size="76" font-weight="800" letter-spacing="-2">Your identity, <tspan fill="url(#accent)">past the tunnel</tspan></text>
+  <rect x="100" y="252" width="120" height="8" rx="4" fill="url(#accent)"/>
+
+  <!-- ================= people ================= -->
+  <g filter="url(#lift)">
+    <rect x="96" y="340" width="220" height="150" rx="18" fill="url(#cardFill)" stroke="#00E3B0" stroke-width="2.5"/>
+  </g>
+  <circle cx="284" cy="374" r="11" fill="#00E3B0"/>
+  <text x="122" y="394" fill="#F2F8FF" font-size="34" font-weight="700">alice</text>
+  <g font-size="20" font-weight="600">
+    <rect x="122" y="420" width="76" height="40" rx="20" fill="#0E3D33" stroke="#1C6B5A"/>
+    <text x="160" y="447" fill="#8FE8D5" text-anchor="middle">#eng</text>
+    <rect x="208" y="420" width="76" height="40" rx="20" fill="#0E3D33" stroke="#1C6B5A"/>
+    <text x="246" y="447" fill="#8FE8D5" text-anchor="middle">#fin</text>
+  </g>
+
+  <g filter="url(#lift)">
+    <rect x="96" y="510" width="220" height="150" rx="18" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <circle cx="284" cy="544" r="11" fill="#3E5F7A"/>
+  <text x="122" y="564" fill="#F2F8FF" font-size="34" font-weight="700">bob</text>
+  <g font-size="20" font-weight="600">
+    <rect x="122" y="590" width="76" height="40" rx="20" fill="#173A57"/>
+    <text x="160" y="617" fill="#A8C6DC" text-anchor="middle">#eng</text>
+  </g>
+
+  <g filter="url(#lift)">
+    <rect x="96" y="680" width="220" height="150" rx="18" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <circle cx="284" cy="714" r="11" fill="#FF6B6B"/>
+  <text x="122" y="734" fill="#F2F8FF" font-size="34" font-weight="700">carol</text>
+  <text x="122" y="790" fill="#FFC64D" font-size="22" font-weight="600">no attributes</text>
+
+  <text x="96" y="878" fill="#7FA6C4" font-size="22" font-weight="600">same URL, three people</text>
+
+  <!-- ================= cloudflare ================= -->
+  <rect x="406" y="320" width="360" height="580" rx="30" fill="url(#shellFill)" stroke="#25506F" stroke-width="2"/>
+  <text x="430" y="370" fill="#7FA6C4" font-size="25" font-weight="700" letter-spacing="5">CLOUDFLARE</text>
+
+  <g filter="url(#lift)">
+    <rect x="430" y="396" width="312" height="210" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="458" y="446" fill="#F2F8FF" font-size="34" font-weight="700">Access</text>
+  <text x="458" y="488" fill="#9FBDD4" font-size="22">IdP sign-in + policy</text>
+  <text x="458" y="522" fill="#9FBDD4" font-size="22">issues a signed JWT</text>
+  <text x="458" y="570" fill="#28C2FF" font-size="20" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">email=alice@…</text>
+
+  <g filter="url(#lift)">
+    <rect x="430" y="650" width="312" height="220" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="458" y="700" fill="#F2F8FF" font-size="34" font-weight="700">Tunnel</text>
+  <text x="458" y="742" fill="#9FBDD4" font-size="22">QUIC to the connector</text>
+  <text x="458" y="776" fill="#9FBDD4" font-size="22">JWT rides in a header</text>
+  <text x="458" y="824" fill="#28C2FF" font-size="18" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">Cf-Access-Jwt-Assertion</text>
+
+  <!-- ================= zab ================= -->
+  <text x="846" y="340" fill="#7FA6C4" font-size="25" font-weight="700" letter-spacing="5">ZAB</text>
+  <g filter="url(#lift)">
+    <rect x="846" y="360" width="420" height="500" rx="24" fill="url(#cardFill)" stroke="#00E3B0" stroke-width="2.5"/>
+  </g>
+  <path d="M846 384a24 24 0 0 1 24-24h372a24 24 0 0 1 24 24v48H846z" fill="#143352"/>
+  <circle cx="884" cy="408" r="9" fill="#FF6B6B"/>
+  <circle cx="914" cy="408" r="9" fill="#FFC64D"/>
+  <circle cx="944" cy="408" r="9" fill="#00E3B0"/>
+  <text x="984" y="417" fill="#7FA6C4" font-size="23" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">zab run</text>
+  <g font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">
+    <text x="884" y="490" fill="#F2F8FF" font-size="26"><tspan fill="#5E819C">1 </tspan>verify the JWT</text>
+    <text x="918" y="526" fill="#5E819C" font-size="21">sig · aud · iss · exp</text>
+    <text x="884" y="584" fill="#F2F8FF" font-size="26"><tspan fill="#5E819C">2 </tspan>sign in as <tspan fill="#00E3B0">alice</tspan></text>
+    <text x="918" y="620" fill="#5E819C" font-size="21">same JWT, ext-jwt-signer</text>
+    <text x="884" y="678" fill="#F2F8FF" font-size="26"><tspan fill="#5E819C">3 </tspan>route host + path</text>
+    <text x="918" y="714" fill="#5E819C" font-size="21">/ledger <tspan fill="#28C2FF">→</tspan> ledger</text>
+    <text x="884" y="772" fill="#F2F8FF" font-size="26"><tspan fill="#5E819C">4 </tspan>dial as <tspan fill="#00E3B0">alice</tspan></text>
+  </g>
+  <text x="884" y="830" fill="#456C88" font-size="19">its own identity carries no traffic</text>
+
+  <g font-size="20" font-weight="600">
+    <rect x="846" y="878" width="214" height="42" rx="21" fill="#0E3D33" stroke="#1C6B5A"/>
+    <text x="953" y="906" fill="#8FE8D5" text-anchor="middle">no inbound port</text>
+    <rect x="1072" y="878" width="194" height="42" rx="21" fill="#173A57"/>
+    <text x="1169" y="906" fill="#A8C6DC" text-anchor="middle">a context per user</text>
+  </g>
+
+  <!-- ================= openziti ================= -->
+  <rect x="1346" y="320" width="478" height="580" rx="30" fill="url(#shellFill)" stroke="#25506F" stroke-width="2"/>
+  <text x="1372" y="370" fill="#7FA6C4" font-size="25" font-weight="700" letter-spacing="5">OPENZITI</text>
+
+  <g filter="url(#lift)">
+    <rect x="1372" y="396" width="426" height="174" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="1400" y="442" fill="#F2F8FF" font-size="30" font-weight="700">Controller</text>
+  <g font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace" font-size="20">
+    <text x="1400" y="482" fill="#5E819C">ext-jwt-signer <tspan fill="#28C2FF">cloudflare</tspan></text>
+    <text x="1400" y="516" fill="#5E819C">Dial <tspan fill="#F2F8FF">#eng</tspan> → <tspan fill="#F2F8FF">wiki</tspan></text>
+    <text x="1400" y="548" fill="#5E819C">Dial <tspan fill="#00E3B0">#fin</tspan> → <tspan fill="#00E3B0">ledger</tspan></text>
+  </g>
+
+  <g filter="url(#lift)">
+    <rect x="1372" y="590" width="426" height="106" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+  </g>
+  <text x="1400" y="634" fill="#F2F8FF" font-size="30" font-weight="700">Edge router</text>
+  <text x="1400" y="672" fill="#6E93B0" font-size="22">carries alice's circuit</text>
+
+  <g filter="url(#lift)">
+    <rect x="1372" y="716" width="203" height="154" rx="20" fill="url(#cardFill)" stroke="#2C5F84" stroke-width="2"/>
+    <rect x="1595" y="716" width="203" height="154" rx="20" fill="url(#cardFill)" stroke="#00E3B0" stroke-width="2.5"/>
+  </g>
+  <text x="1398" y="764" fill="#F2F8FF" font-size="30" font-weight="700">wiki</text>
+  <text x="1398" y="800" fill="#A8C6DC" font-size="20" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">#eng</text>
+  <text x="1398" y="842" fill="#6E93B0" font-size="20">no public port</text>
+  <text x="1621" y="764" fill="#F2F8FF" font-size="30" font-weight="700">ledger</text>
+  <text x="1621" y="800" fill="#00E3B0" font-size="20" font-family="ui-monospace, 'JetBrains Mono', Consolas, monospace">#fin</text>
+  <text x="1621" y="842" fill="#6E93B0" font-size="20">no public port</text>
+
+  <!-- ================= flows ================= -->
+  <path d="M316 430 C364 430 384 452 424 452" fill="none" stroke="#6E93B0" stroke-width="4" stroke-dasharray="12 10" marker-end="url(#arrowGrey)"/>
+  <text x="322" y="412" fill="#8FB0C8" font-size="22" font-weight="600">sign in</text>
+
+  <path d="M586 606 L586 642" fill="none" stroke="#00E3B0" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <text x="602" y="632" fill="#00E3B0" font-size="21" font-weight="600">JWT</text>
+
+  <path d="M742 760 C792 760 800 700 840 700" fill="none" stroke="#00E3B0" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <text x="752" y="800" fill="#00E3B0" font-size="22" font-weight="600">tunnel</text>
+
+  <path d="M1266 470 C1300 470 1330 470 1366 470" fill="none" stroke="#6E93B0" stroke-width="4" stroke-dasharray="12 10" marker-end="url(#arrowGrey)"/>
+  <text x="1306" y="436" fill="#8FB0C8" font-size="20" font-weight="600" text-anchor="middle">same</text>
+  <text x="1306" y="458" fill="#8FB0C8" font-size="20" font-weight="600" text-anchor="middle">JWT</text>
+
+  <path d="M1266 640 C1300 640 1330 640 1366 640" fill="none" stroke="#00E3B0" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <text x="1306" y="606" fill="#00E3B0" font-size="20" font-weight="600" text-anchor="middle">as</text>
+  <text x="1306" y="628" fill="#00E3B0" font-size="20" font-weight="600" text-anchor="middle">alice</text>
+
+  <!-- caption -->
+  <text x="96" y="1006" fill="#9FBDD4" font-size="30" font-weight="500">Cloudflare decides who gets in. OpenZiti decides what each person reaches, <tspan fill="#00E3B0">as that person</tspan>.</text>
+
+  <text x="1800" y="1046" text-anchor="end" fill="#4E7391" font-size="28" font-weight="700" letter-spacing="4">OPENZITI</text>
+</svg>

@@ -1,0 +1,72 @@
+# Rehearsal only. fakeaccess stands in for Cloudflare Access + Tunnel: it mints Access-shaped
+# JWTs for ?as=<email> or X-As and hands the request to the real zab.Bridge, with the same
+# config and identity as the zab Deployment. Reach it with kubectl port-forward; it has no
+# Service exposed outside the cluster. Its signing key is new on every start, so re-create the
+# ext-jwt-signer after a restart (see k8s-status.md).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fakeaccess
+  namespace: zab-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fakeaccess
+  template:
+    metadata:
+      labels:
+        app: fakeaccess
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      initContainers:
+        - name: seed-endpoints
+          image: busybox:1.37
+          command: ["sh", "-c", "cp /etc/zab/id/endpoints.yml /var/run/zab/endpoints.yml"]
+          volumeMounts:
+            - name: identity
+              mountPath: /etc/zab/id
+              readOnly: true
+            - name: run
+              mountPath: /var/run/zab
+      containers:
+        - name: fakeaccess
+          image: zab.local/fakeaccess:dev
+          imagePullPolicy: Never
+          args:
+            - -config=/etc/zab/config.yml
+            - -jwks=127.0.0.1:28443
+            - -listen=0.0.0.0:28880
+            - -aud=fakeaud
+            - -cert-out=/var/run/zab/fakeaccess.pem
+          ports:
+            - containerPort: 28880
+          volumeMounts:
+            - name: config
+              mountPath: /etc/zab/config.yml
+              subPath: config.yml
+              readOnly: true
+            - name: identity
+              mountPath: /etc/zab/id
+              readOnly: true
+            - name: run
+              mountPath: /var/run/zab
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+      volumes:
+        - name: config
+          configMap:
+            name: zab-config
+        - name: identity
+          secret:
+            secretName: zab-identity
+            defaultMode: 0440
+        - name: run
+          emptyDir: {}

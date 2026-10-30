@@ -1,0 +1,16 @@
+# ZAB's identity, its endpoint file and the Cloudflare tunnel token
+zab/
+# the quickstart's PKI and database
+qs/
+# zab, demo-http-server and ziti
+bin/
+# k8s/build-images.ps1 output
+k8s/out/
+# the filled-in copy of default.env: real emails, password
+.env
+# the show quickstart's log
+qs.log
+# rehearse/ npm install
+node_modules/
+# internal record behind the README, not for publication
+notes/evidence.md
